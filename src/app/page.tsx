@@ -1,7 +1,15 @@
 "use client";
 import { ModeToggle } from "@/components/theme/toggle-mode";
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useState, useRef, useCallback } from "react";
 import { useRouter } from "next/navigation";
+
+// Type declarations for Web Speech API
+declare global {
+  interface Window {
+    SpeechRecognition: typeof SpeechRecognition;
+    webkitSpeechRecognition: typeof SpeechRecognition;
+  }
+}
 
 export default function Home() {
   const [isListening, setIsListening] = useState(false);
@@ -11,16 +19,77 @@ export default function Home() {
   const [debugInfo, setDebugInfo] = useState<string[]>([]);
   const [recognitionStatus, setRecognitionStatus] = useState("Initializing...");
   const router = useRouter();
-  const recognitionRef = useRef<any>(null);
+  const recognitionRef = useRef<SpeechRecognition | null>(null);
 
   // Add debug message
-  const addDebug = (message: string) => {
+  const addDebug = useCallback((message: string) => {
     console.log(`[Speech Debug] ${message}`);
     setDebugInfo((prev) => [
       ...prev.slice(-4),
       `${new Date().toLocaleTimeString()}: ${message}`,
     ]);
-  };
+  }, []);
+
+  // Text-to-speech function
+  const speak = useCallback(
+    (text: string) => {
+      addDebug(`Speaking: "${text}"`);
+      if ("speechSynthesis" in window) {
+        // Stop any current speech
+        speechSynthesis.cancel();
+
+        const utterance = new SpeechSynthesisUtterance(text);
+        utterance.lang = "id-ID";
+        utterance.rate = 0.9;
+        utterance.volume = 0.8;
+
+        utterance.onstart = () => addDebug("Speech started");
+        utterance.onend = () => addDebug("Speech ended");
+        utterance.onerror = (e) => addDebug(`Speech error: ${e.error}`);
+
+        speechSynthesis.speak(utterance);
+      }
+    },
+    [addDebug]
+  );
+
+  // Handle voice commands
+  const handleVoiceCommand = useCallback(
+    (command: string) => {
+      addDebug(`Processing command: "${command}"`);
+
+      const commands = [
+        "buka halaman deteksi uang",
+        "mulai deteksi",
+        "deteksi uang",
+        "scan uang",
+        "periksa uang",
+        "cek uang",
+        "buka deteksi",
+        "mulai scan",
+        "halaman deteksi",
+        "deteksi",
+      ];
+
+      // Check for partial matches too
+      const foundCommand = commands.find(
+        (cmd) =>
+          command.includes(cmd) ||
+          cmd.split(" ").every((word) => command.includes(word))
+      );
+
+      if (foundCommand) {
+        addDebug(`Command matched: "${foundCommand}"`);
+        speak("Membuka halaman deteksi uang");
+        setTimeout(() => {
+          router.push("/money-talks");
+        }, 1000);
+      } else {
+        addDebug(`No command match found for: "${command}"`);
+      }
+    },
+    [addDebug, router, speak]
+  );
 
   // Initialize speech recognition
   useEffect(() => {
@@ -28,8 +97,7 @@ export default function Home() {
       addDebug("Checking for speech recognition support...");
 
       const SpeechRecognition =
-        (window as any).SpeechRecognition ||
-        (window as any).webkitSpeechRecognition;
+        window.SpeechRecognition || window.webkitSpeechRecognition;
 
       if (SpeechRecognition) {
         addDebug("Speech recognition supported!");
@@ -70,7 +138,7 @@ export default function Home() {
           }, 1000);
         };
 
-        recognition.onerror = (event: any) => {
+        recognition.onerror = (event: SpeechRecognitionErrorEvent) => {
           addDebug(
             `Recognition error: ${event.error} - ${
               event.message || "No message"
@@ -87,7 +155,7 @@ export default function Home() {
           }
         };
 
-        recognition.onresult = (event: any) => {
+        recognition.onresult = (event: SpeechRecognitionEvent) => {
           let interim = "";
           let final = "";
 
@@ -148,87 +216,7 @@ export default function Home() {
         setRecognitionStatus("Not supported");
       }
     }
-  }, []); // Remove dependencies to prevent re-initialization
-
-  // Handle voice commands
-  const handleVoiceCommand = (command: string) => {
-    addDebug(`Processing command: "${command}"`);
-
-    const commands = [
-      "buka halaman deteksi uang",
-      "mulai deteksi",
-      "deteksi uang",
-      "scan uang",
-      "periksa uang",
-      "cek uang",
-      "buka deteksi",
-      "mulai scan",
-      "halaman deteksi",
-      "deteksi",
-    ];
-
-    // Check for partial matches too
-    const foundCommand = commands.find(
-      (cmd) =>
-        command.includes(cmd) ||
-        cmd.split(" ").every((word) => command.includes(word))
-    );
-
-    if (foundCommand) {
-      addDebug(`Command matched: "${foundCommand}"`);
-      speak("Membuka halaman deteksi uang");
-      setTimeout(() => {
-        router.push("/money-talks");
-      }, 1000);
-    } else {
-      addDebug(`No command match found for: "${command}"`);
-    }
-  };
-
-  // Text-to-speech function
-  const speak = (text: string) => {
-    addDebug(`Speaking: "${text}"`);
-    if ("speechSynthesis" in window) {
-      // Stop any current speech
-      speechSynthesis.cancel();
-
-      const utterance = new SpeechSynthesisUtterance(text);
-      utterance.lang = "id-ID";
-      utterance.rate = 0.9;
-      utterance.volume = 0.8;
-
-      utterance.onstart = () => addDebug("Speech started");
-      utterance.onend = () => addDebug("Speech ended");
-      utterance.onerror = (e) => addDebug(`Speech error: ${e.error}`);
-
-      speechSynthesis.speak(utterance);
-    }
-  };
-
-  // Manual start/stop functions
-  const startListening = () => {
-    if (recognitionRef.current && !isListening) {
-      try {
-        addDebug("Manual start requested");
-        recognitionRef.current.start();
-      } catch (e) {
-        addDebug(`Manual start failed: ${e}`);
-      }
-    }
-  };
-
-  const stopListening = () => {
-    if (recognitionRef.current && isListening) {
-      addDebug("Manual stop requested");
-      recognitionRef.current.stop();
-    }
-  };
-
-  // Test voice command
-  const testVoiceCommand = () => {
-    addDebug("Testing voice command...");
-    handleVoiceCommand("buka halaman deteksi uang");
-  };
+  }, [addDebug, handleVoiceCommand, isListening]);
 
   // Announce page content when loaded
   useEffect(() => {
@@ -239,7 +227,7 @@ export default function Home() {
     }, 3000);
 
     return () => clearTimeout(timer);
-  }, []);
+  }, [speak]);
 
   const handleStartDetection = () => {
     speak("Membuka halaman deteksi uang");
@@ -277,43 +265,7 @@ export default function Home() {
         </div>
 
         {/* Debug Panel - Only show if there are debug messages */}
-        {debugInfo.length > 0 && (
-          // <div className="absolute top-6 left-6 bg-white/90 dark:bg-gray-800/90 backdrop-blur-sm rounded-lg p-4 shadow-lg max-w-md">
-          //   <h4 className="text-sm font-bold text-gray-800 dark:text-white mb-2">
-          //     Debug Info:
-          //   </h4>
-          //   <div className="space-y-1 text-xs text-gray-600 dark:text-gray-300">
-          //     {debugInfo.map((info, index) => (
-          //       <div key={index} className="font-mono">
-          //         {info}
-          //       </div>
-          //     ))}
-          //   </div>
-          //   <div className="flex gap-2 mt-3">
-          //     <button
-          //       onClick={startListening}
-          //       className="px-2 py-1 bg-green-500 text-white text-xs rounded"
-          //       disabled={isListening}
-          //     >
-          //       Start
-          //     </button>
-          //     <button
-          //       onClick={stopListening}
-          //       className="px-2 py-1 bg-red-500 text-white text-xs rounded"
-          //       disabled={!isListening}
-          //     >
-          //       Stop
-          //     </button>
-          //     <button
-          //       onClick={testVoiceCommand}
-          //       className="px-2 py-1 bg-blue-500 text-white text-xs rounded"
-          //     >
-          //       Test
-          //     </button>
-          //   </div>
-          // </div>
-          <div></div>
-        )}
+        {debugInfo.length > 0 && <div></div>}
 
         {/* Main Content */}
         <main className="text-center max-w-4xl mx-auto">
@@ -338,14 +290,14 @@ export default function Home() {
                 Perintah yang bisa digunakan:
               </p>
               <div className="grid grid-cols-2 gap-2 text-xs text-blue-600 dark:text-blue-400 mb-3">
-                <div>"buka halaman deteksi uang"</div>
-                <div>"mulai deteksi"</div>
-                <div>"deteksi uang"</div>
-                <div>"scan uang"</div>
-                <div>"periksa uang"</div>
-                <div>"cek uang"</div>
-                <div>"buka deteksi"</div>
-                <div>"halaman deteksi"</div>
+                <div>&quot;buka halaman deteksi uang&quot;</div>
+                <div>&quot;mulai deteksi&quot;</div>
+                <div>&quot;deteksi uang&quot;</div>
+                <div>&quot;scan uang&quot;</div>
+                <div>&quot;periksa uang&quot;</div>
+                <div>&quot;cek uang&quot;</div>
+                <div>&quot;buka deteksi&quot;</div>
+                <div>&quot;halaman deteksi&quot;</div>
               </div>
 
               {/* Current transcript display */}
@@ -354,7 +306,9 @@ export default function Home() {
                   <div className="p-2 bg-yellow-100 dark:bg-yellow-900/30 rounded border-l-4 border-yellow-400">
                     <p className="text-xs text-yellow-700 dark:text-yellow-300">
                       Mendengarkan:{" "}
-                      <span className="italic">"{interimTranscript}"</span>
+                      <span className="italic">
+                        &quot;{interimTranscript}&quot;
+                      </span>
                     </p>
                   </div>
                 )}
@@ -363,7 +317,9 @@ export default function Home() {
                   <div className="p-2 bg-green-100 dark:bg-green-900/30 rounded border-l-4 border-green-400">
                     <p className="text-xs text-green-700 dark:text-green-300">
                       Terakhir didengar:{" "}
-                      <span className="font-medium">"{transcript}"</span>
+                      <span className="font-medium">
+                        &quot;{transcript}&quot;
+                      </span>
                     </p>
                   </div>
                 )}
