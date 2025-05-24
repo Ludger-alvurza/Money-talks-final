@@ -4,8 +4,11 @@ import React, { useEffect, useState, useRef } from "react";
 import { PredictionResult } from "@/components/currency/types";
 import StatusMessageComponent from "@/components/currency/StatusMessageComponent";
 import FileUploadComponent from "@/components/currency/FileUploadComponent";
-import CameraComponent from "@/components/currency/CameraComponent";
+import CameraComponent, {
+  CameraComponentRef,
+} from "@/components/currency/CameraComponent";
 import ResultsComponent from "@/components/currency/ResultsComponent";
+import { ModeToggle } from "@/components/theme/toggle-mode";
 
 const CurrencyDetector: React.FC = () => {
   const [isModelLoaded, setIsModelLoaded] = useState<boolean>(false);
@@ -18,16 +21,17 @@ const CurrencyDetector: React.FC = () => {
   const [modelHandler, setModelHandler] = useState<any>(null);
   const [audioEnabled, setAudioEnabled] = useState<boolean>(true);
 
+  // Ref to access CameraComponent methods
+  const cameraRef = useRef<CameraComponentRef>(null);
+
   // Audio utility functions
   const speakResult = (prediction: PredictionResult) => {
     if (!audioEnabled || !prediction) return;
 
-    // Cancel any ongoing speech
     window.speechSynthesis.cancel();
 
     let textToSpeak = "";
 
-    // Map denomination to Indonesian text
     const denominationMap: { [key: string]: string } = {
       "1000": "seribu rupiah",
       "2000": "dua ribu rupiah",
@@ -38,23 +42,17 @@ const CurrencyDetector: React.FC = () => {
       "100000": "seratus ribu rupiah",
     };
 
-    // Get probability from PredictionResult
     const confidence = prediction.probability;
 
     if (confidence > 0.9) {
-      // Above 90% - just say the denomination
       const denomination =
         denominationMap[prediction.className] || prediction.className;
       textToSpeak = denomination;
     } else {
-      // Below 90% - say it's not money
       textToSpeak = "Bukan uang";
     }
 
-    // Create speech synthesis utterance
     const utterance = new SpeechSynthesisUtterance(textToSpeak);
-
-    // Set language to Indonesian if available
     const voices = window.speechSynthesis.getVoices();
     const indonesianVoice = voices.find(
       (voice) => voice.lang.includes("id") || voice.lang.includes("ID")
@@ -65,24 +63,21 @@ const CurrencyDetector: React.FC = () => {
     }
 
     utterance.lang = "id-ID";
-    utterance.rate = 0.9; // Slightly slower for clarity
+    utterance.rate = 0.9;
     utterance.pitch = 1;
     utterance.volume = 1;
 
-    // Speak the text
     window.speechSynthesis.speak(utterance);
   };
 
   const toggleAudio = () => {
     setAudioEnabled(!audioEnabled);
     if (!audioEnabled) {
-      // Test audio when enabling
       const testUtterance = new SpeechSynthesisUtterance("Audio diaktifkan");
       testUtterance.lang = "id-ID";
       testUtterance.rate = 0.9;
       window.speechSynthesis.speak(testUtterance);
     } else {
-      // Stop any ongoing speech when disabling
       window.speechSynthesis.cancel();
     }
   };
@@ -91,16 +86,13 @@ const CurrencyDetector: React.FC = () => {
   useEffect(() => {
     const loadTensorFlowAndModel = async () => {
       try {
-        // Dynamic import TensorFlow.js
         const tfjs = await import("@tensorflow/tfjs");
         window.tf = tfjs;
         console.log("TensorFlow.js loaded dynamically");
 
-        // Import modelHandler
         const modelModule = await import("../../../utils/loadModel.js");
         console.log("modelHandler module imported");
 
-        // Wait for initialization
         if (
           modelModule.default &&
           typeof modelModule.default.init === "function"
@@ -122,10 +114,9 @@ const CurrencyDetector: React.FC = () => {
 
     loadTensorFlowAndModel();
 
-    // Clean up resources when component unmounts
     return () => {
       stopCamera();
-      window.speechSynthesis.cancel(); // Stop any ongoing speech
+      window.speechSynthesis.cancel();
       if (modelHandler && typeof modelHandler.dispose === "function") {
         modelHandler.dispose();
       }
@@ -135,7 +126,6 @@ const CurrencyDetector: React.FC = () => {
   // Load voices when speech synthesis is ready
   useEffect(() => {
     const loadVoices = () => {
-      // This helps ensure voices are loaded
       window.speechSynthesis.getVoices();
     };
 
@@ -152,72 +142,21 @@ const CurrencyDetector: React.FC = () => {
   // Effect to speak result when prediction changes
   useEffect(() => {
     if (prediction && audioEnabled) {
-      // Small delay to ensure the UI has updated before speaking
       setTimeout(() => {
         speakResult(prediction);
       }, 500);
     }
   }, [prediction, audioEnabled]);
 
-  // Start the camera feed
+  // Camera functions - now using the ref
   const startCamera = async () => {
     try {
-      // First set camera as active - this will cause CameraComponent to render the video element
       setCameraActive(true);
-      console.log("Camera set active, rendering component...");
+      setErrorMessage("");
 
-      // Wait for the video element to be available
-      let attempts = 0;
-      const maxAttempts = 50; // Try for about 5 seconds (50 * 100ms)
-
-      const waitForVideoElement = () => {
-        return new Promise<void>((resolve, reject) => {
-          const checkElement = () => {
-            console.log(
-              `Checking for video element, attempt ${
-                attempts + 1
-              }/${maxAttempts}`
-            );
-            if (window.videoElement) {
-              console.log("Video element found!", window.videoElement);
-              resolve();
-            } else if (attempts >= maxAttempts) {
-              console.error("Video element not found after maximum attempts");
-              reject(
-                new Error("Video element not available after multiple attempts")
-              );
-            } else {
-              attempts++;
-              setTimeout(checkElement, 100);
-            }
-          };
-
-          // Start checking after a short initial delay
-          setTimeout(checkElement, 300);
-        });
-      };
-
-      // Wait for video element to be created
-      await waitForVideoElement();
-      console.log("Video element available, requesting camera access...");
-
-      // Now that we have the video element, get the camera stream
-      const constraints = {
-        video: {
-          facingMode: "environment", // Use back camera on mobile devices
-          width: { ideal: 1280 },
-          height: { ideal: 720 },
-        },
-      };
-
-      const stream = await navigator.mediaDevices.getUserMedia(constraints);
-      console.log("Camera stream obtained:", stream);
-
-      if (window.videoElement) {
-        window.videoElement.srcObject = stream;
-        setErrorMessage("");
-        console.log("Stream set to video element successfully");
-      }
+      // The CameraComponent will handle the actual camera stream
+      // We just need to set the state here
+      console.log("Camera activation requested");
     } catch (error) {
       setCameraActive(false);
       setErrorMessage(`Camera access error: ${(error as Error).message}`);
@@ -225,21 +164,13 @@ const CurrencyDetector: React.FC = () => {
     }
   };
 
-  // Stop the camera feed
   const stopCamera = () => {
-    if (!window.videoElement || !window.videoElement.srcObject) return;
-
-    const stream = window.videoElement.srcObject as MediaStream;
-    const tracks = stream.getTracks();
-
-    tracks.forEach((track) => track.stop());
-    if (window.videoElement) {
-      window.videoElement.srcObject = null;
+    if (cameraRef.current) {
+      cameraRef.current.stopCameraStream();
     }
     setCameraActive(false);
   };
 
-  // Toggle camera on/off
   const toggleCamera = () => {
     if (cameraActive) {
       stopCamera();
@@ -248,7 +179,7 @@ const CurrencyDetector: React.FC = () => {
     }
   };
 
-  // Handle file selection
+  // File handling functions
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const files = event.target.files;
     if (!files || files.length === 0) {
@@ -260,45 +191,50 @@ const CurrencyDetector: React.FC = () => {
     const file = files[0];
     setSelectedFile(file);
 
-    // Create preview URL
     const objectUrl = URL.createObjectURL(file);
     setPreviewUrl(objectUrl);
 
-    // Clean up previous URL when component unmounts or when new file is selected
     return () => URL.revokeObjectURL(objectUrl);
   };
 
-  // Capture image and make prediction from camera
+  // Prediction functions - updated to use camera ref
   const captureAndPredict = async () => {
-    if (
-      !isModelLoaded ||
-      !window.videoElement ||
-      !window.canvasElement ||
-      !modelHandler
-    )
+    if (!isModelLoaded || !modelHandler || !cameraRef.current) {
+      console.error("Prerequisites not met for prediction");
       return;
+    }
 
     try {
       setIsProcessing(true);
       setPrediction(null);
 
-      const video = window.videoElement;
-      const canvas = window.canvasElement;
-      const context = canvas.getContext("2d");
+      const videoElement = cameraRef.current.getVideoElement();
+      const canvasElement = cameraRef.current.getCanvasElement();
 
+      if (!videoElement || !canvasElement) {
+        throw new Error("Video or canvas element not available");
+      }
+
+      const context = canvasElement.getContext("2d");
       if (!context) {
         throw new Error("Could not get canvas context");
       }
 
       // Set canvas dimensions to match video
-      canvas.width = video.videoWidth;
-      canvas.height = video.videoHeight;
+      canvasElement.width = videoElement.videoWidth;
+      canvasElement.height = videoElement.videoHeight;
 
-      // Draw current video frame to canvas
-      context.drawImage(video, 0, 0, canvas.width, canvas.height);
+      // Draw the current video frame to canvas
+      context.drawImage(
+        videoElement,
+        0,
+        0,
+        canvasElement.width,
+        canvasElement.height
+      );
 
-      // Make prediction using the ensemble method for better accuracy
-      const result = await modelHandler.predictWithEnsemble(canvas);
+      // Run prediction on the canvas
+      const result = await modelHandler.predictWithEnsemble(canvasElement);
       setPrediction(result);
       setErrorMessage("");
     } catch (error) {
@@ -309,7 +245,6 @@ const CurrencyDetector: React.FC = () => {
     }
   };
 
-  // Make prediction from uploaded image
   const predictFromImage = async () => {
     if (!isModelLoaded || !previewUrl || !modelHandler) return;
 
@@ -317,16 +252,13 @@ const CurrencyDetector: React.FC = () => {
       setIsProcessing(true);
       setPrediction(null);
 
-      // Create an image element from the preview URL
       const img = new Image();
       img.src = previewUrl;
 
-      // Wait for the image to load
       await new Promise<void>((resolve) => {
         img.onload = () => resolve();
       });
 
-      // Make prediction using the ensemble method for better accuracy
       const result = await modelHandler.predictWithEnsemble(img);
       setPrediction(result);
       setErrorMessage("");
@@ -338,57 +270,80 @@ const CurrencyDetector: React.FC = () => {
     }
   };
 
+  // Handle camera ready callback
+  const handleCameraReady = (
+    videoElement: HTMLVideoElement,
+    canvasElement: HTMLCanvasElement
+  ) => {
+    console.log("Camera elements ready:", { videoElement, canvasElement });
+    // Camera elements are now available for use
+  };
+
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50">
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 dark:from-gray-900 dark:via-slate-900 dark:to-black transition-colors duration-300">
+      {/* Animated Background Elements */}
+      <div className="fixed inset-0 overflow-hidden pointer-events-none">
+        <div className="absolute -top-40 -right-40 w-80 h-80 bg-purple-400/20 dark:bg-purple-600/10 rounded-full mix-blend-multiply filter blur-xl animate-pulse"></div>
+        <div className="absolute -bottom-40 -left-40 w-80 h-80 bg-blue-400/20 dark:bg-blue-600/10 rounded-full mix-blend-multiply filter blur-xl animate-pulse animation-delay-2000"></div>
+        <div className="absolute top-40 left-1/2 transform -translate-x-1/2 w-80 h-80 bg-indigo-400/20 dark:bg-indigo-600/10 rounded-full mix-blend-multiply filter blur-xl animate-pulse animation-delay-4000"></div>
+      </div>
+
       {/* Header Section */}
-      <div className="bg-white/80 backdrop-blur-sm border-b border-gray-200/50 shadow-sm sticky top-0 z-10">
-        <div className="container mx-auto px-4 py-6">
+      <div className="relative bg-white/90 dark:bg-gray-900/90 backdrop-blur-md border-b border-gray-200/50 dark:border-gray-700/50 shadow-lg sticky top-0 z-50">
+        <div className="absolute inset-0 bg-gradient-to-r from-blue-600/5 to-purple-600/5 dark:from-blue-400/5 dark:to-purple-400/5"></div>
+        <div className="relative container mx-auto px-4 py-6">
           <div className="flex justify-between items-center">
             <div className="flex items-center space-x-4">
-              <div className="bg-gradient-to-r from-blue-600 to-purple-600 p-3 rounded-xl shadow-lg">
-                <span className="text-2xl">💰</span>
+              <div className="relative group">
+                <div className="absolute -inset-1 bg-gradient-to-r from-blue-600 to-purple-600 rounded-xl blur opacity-75 group-hover:opacity-100 transition duration-300"></div>
+                <div className="relative bg-gradient-to-r from-blue-600 to-purple-600 p-3 rounded-xl shadow-lg transform group-hover:scale-105 transition-transform duration-300">
+                  <span className="text-2xl filter drop-shadow-sm">💰</span>
+                </div>
               </div>
               <div>
-                <h1 className="text-3xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+                <h1 className="text-3xl font-bold bg-gradient-to-r from-blue-600 via-purple-600 to-indigo-600 dark:from-blue-400 dark:via-purple-400 dark:to-indigo-400 bg-clip-text text-transparent">
                   IDR Currency Detector
                 </h1>
-                <p className="text-gray-600 text-sm mt-1">
+                <p className="text-gray-600 dark:text-gray-300 text-sm mt-1 font-medium">
                   AI-Powered Indonesian Rupiah Recognition
                 </p>
               </div>
             </div>
 
-            {/* Audio Toggle Button */}
-            <button
-              onClick={toggleAudio}
-              className={`px-6 py-3 rounded-xl font-semibold transition-all duration-300 transform hover:scale-105 shadow-lg ${
-                audioEnabled
-                  ? "bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600 text-white shadow-green-200"
-                  : "bg-gradient-to-r from-gray-500 to-slate-500 hover:from-gray-600 hover:to-slate-600 text-white shadow-gray-200"
-              }`}
-              title={
-                audioEnabled
-                  ? "Audio: ON (Click to disable)"
-                  : "Audio: OFF (Click to enable)"
-              }
-            >
-              <div className="flex items-center space-x-2">
-                <span className="text-lg">🔊</span>
-                <span>{audioEnabled ? "ON" : "OFF"}</span>
-              </div>
-            </button>
+            <div className="flex items-center space-x-4">
+              <ModeToggle />
+              <button
+                onClick={toggleAudio}
+                className={`group relative px-6 py-3 rounded-xl font-semibold transition-all duration-300 transform hover:scale-105 shadow-xl overflow-hidden ${
+                  audioEnabled
+                    ? "bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600 text-white shadow-green-200 dark:shadow-green-900/50"
+                    : "bg-gradient-to-r from-gray-500 to-slate-500 hover:from-gray-600 hover:to-slate-600 text-white shadow-gray-200 dark:shadow-gray-900/50"
+                }`}
+                title={
+                  audioEnabled
+                    ? "Audio: ON (Click to disable)"
+                    : "Audio: OFF (Click to enable)"
+                }
+              >
+                <div className="absolute inset-0 bg-white/20 transform scale-x-0 group-hover:scale-x-100 transition-transform duration-300 origin-left"></div>
+                <div className="relative flex items-center space-x-2">
+                  <span className="text-lg">🔊</span>
+                  <span>{audioEnabled ? "ON" : "OFF"}</span>
+                </div>
+              </button>
+            </div>
           </div>
         </div>
       </div>
 
       {/* Main Content */}
-      <div className="container mx-auto px-4 py-8 space-y-8">
-        {/* Audio Status Indicator */}
+      <div className="relative container mx-auto px-4 py-8 space-y-8">
+        {/* Audio Status Indicator with enhanced styling */}
         {audioEnabled && (
-          <div className="bg-gradient-to-r from-blue-500/10 to-purple-500/10 backdrop-blur-sm border border-blue-200/50 rounded-2xl p-4 shadow-lg">
-            <div className="flex items-center justify-center space-x-3 text-blue-700">
-              <div className="bg-blue-100 p-2 rounded-full">
-                <span className="text-lg">🔊</span>
+          <div className="group relative bg-gradient-to-r from-blue-500/10 to-purple-500/10 dark:from-blue-400/10 dark:to-purple-400/10 backdrop-blur-sm border border-blue-200/50 dark:border-blue-700/50 rounded-2xl p-6 shadow-lg hover:shadow-xl transition-all duration-300">
+            <div className="flex items-center justify-center space-x-3 text-blue-700 dark:text-blue-300">
+              <div className="bg-blue-100 dark:bg-blue-900/50 p-3 rounded-full shadow-inner">
+                <span className="text-lg animate-pulse">🔊</span>
               </div>
               <span className="font-medium">
                 Audio output aktif - Hasil deteksi akan diumumkan secara
@@ -398,8 +353,8 @@ const CurrencyDetector: React.FC = () => {
           </div>
         )}
 
-        {/* Status messages */}
-        <div className="bg-white/70 backdrop-blur-sm rounded-2xl shadow-lg border border-gray-200/50 overflow-hidden">
+        {/* Status messages with dark mode */}
+        <div className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm rounded-2xl shadow-lg hover:shadow-xl border border-gray-200/50 dark:border-gray-700/50 overflow-hidden transition-all duration-300">
           <StatusMessageComponent
             isModelLoaded={isModelLoaded}
             errorMessage={errorMessage}
@@ -411,95 +366,144 @@ const CurrencyDetector: React.FC = () => {
           {/* Left Column - Upload & Camera */}
           <div className="space-y-6">
             {/* Image Upload Section */}
-            <div className="bg-white/70 backdrop-blur-sm rounded-2xl shadow-lg border border-gray-200/50 p-6 hover:shadow-xl transition-all duration-300">
-              <div className="flex items-center space-x-3 mb-4">
-                <div className="bg-gradient-to-r from-purple-500 to-pink-500 p-2 rounded-lg">
-                  <span className="text-white text-lg">📁</span>
+            <div className="group relative bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm rounded-2xl shadow-lg hover:shadow-2xl border border-gray-200/50 dark:border-gray-700/50 p-6 transition-all duration-300">
+              <div className="flex items-center space-x-3 mb-6">
+                <div className="relative group/icon">
+                  <div className="absolute -inset-1 bg-gradient-to-r from-purple-500 to-pink-500 rounded-lg blur opacity-75 group-hover/icon:opacity-100 transition duration-300"></div>
+                  <div className="relative bg-gradient-to-r from-purple-500 to-pink-500 p-3 rounded-lg shadow-lg">
+                    <span className="text-white text-lg filter drop-shadow-sm">
+                      📁
+                    </span>
+                  </div>
                 </div>
-                <h2 className="text-xl font-bold text-gray-800">
+                <h2 className="text-xl font-bold text-gray-800 dark:text-gray-100">
                   Upload Image
                 </h2>
               </div>
-              <FileUploadComponent
-                isModelLoaded={isModelLoaded}
-                isProcessing={isProcessing}
-                previewUrl={previewUrl}
-                handleFileChange={handleFileChange}
-                predictFromImage={predictFromImage}
-              />
+              <div className="relative z-10">
+                <FileUploadComponent
+                  isModelLoaded={isModelLoaded}
+                  isProcessing={isProcessing}
+                  previewUrl={previewUrl}
+                  handleFileChange={handleFileChange}
+                  predictFromImage={predictFromImage}
+                />
+              </div>
             </div>
 
             {/* Camera Section */}
-            <div className="bg-white/70 backdrop-blur-sm rounded-2xl shadow-lg border border-gray-200/50 p-6 hover:shadow-xl transition-all duration-300">
-              <div className="flex items-center space-x-3 mb-4">
-                <div className="bg-gradient-to-r from-green-500 to-teal-500 p-2 rounded-lg">
-                  <span className="text-white text-lg">📷</span>
+            <div className="group relative bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm rounded-2xl shadow-lg hover:shadow-2xl border border-gray-200/50 dark:border-gray-700/50 p-6 transition-all duration-300">
+              <div className="flex items-center space-x-3 mb-6">
+                <div className="relative group/icon">
+                  <div className="absolute -inset-1 bg-gradient-to-r from-green-500 to-teal-500 rounded-lg blur opacity-75 group-hover/icon:opacity-100 transition duration-300"></div>
+                  <div className="relative bg-gradient-to-r from-green-500 to-teal-500 p-3 rounded-lg shadow-lg">
+                    <span className="text-white text-lg filter drop-shadow-sm">
+                      📷
+                    </span>
+                  </div>
                 </div>
-                <h2 className="text-xl font-bold text-gray-800">Live Camera</h2>
+                <h2 className="text-xl font-bold text-gray-800 dark:text-gray-100">
+                  Live Camera
+                </h2>
               </div>
-              <CameraComponent
-                isModelLoaded={isModelLoaded}
-                isProcessing={isProcessing}
-                cameraActive={cameraActive}
-                toggleCamera={toggleCamera}
-                captureAndPredict={captureAndPredict}
-              />
+              <div className="relative z-10">
+                <CameraComponent
+                  ref={cameraRef}
+                  isModelLoaded={isModelLoaded}
+                  isProcessing={isProcessing}
+                  cameraActive={cameraActive}
+                  toggleCamera={toggleCamera}
+                  captureAndPredict={captureAndPredict}
+                  onCameraReady={handleCameraReady}
+                />
+              </div>
             </div>
           </div>
 
           {/* Right Column - Results */}
           <div className="space-y-6">
             {/* Results Section */}
-            <div className="bg-white/70 backdrop-blur-sm rounded-2xl shadow-lg border border-gray-200/50 p-6 hover:shadow-xl transition-all duration-300">
-              <div className="flex items-center space-x-3 mb-4">
-                <div className="bg-gradient-to-r from-orange-500 to-red-500 p-2 rounded-lg">
-                  <span className="text-white text-lg">🎯</span>
+            <div className="group relative bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm rounded-2xl shadow-lg hover:shadow-2xl border border-gray-200/50 dark:border-gray-700/50 p-6 transition-all duration-300">
+              <div className="flex items-center space-x-3 mb-6">
+                <div className="relative group/icon">
+                  <div className="absolute -inset-1 bg-gradient-to-r from-orange-500 to-red-500 rounded-lg blur opacity-75 group-hover/icon:opacity-100 transition duration-300"></div>
+                  <div className="relative bg-gradient-to-r from-orange-500 to-red-500 p-3 rounded-lg shadow-lg">
+                    <span className="text-white text-lg filter drop-shadow-sm">
+                      🎯
+                    </span>
+                  </div>
                 </div>
-                <h2 className="text-xl font-bold text-gray-800">
+                <h2 className="text-xl font-bold text-gray-800 dark:text-gray-100">
                   Detection Results
                 </h2>
               </div>
-              <ResultsComponent prediction={prediction} />
+              <div className="relative z-10">
+                <ResultsComponent prediction={prediction} />
+              </div>
             </div>
 
             {/* Info Card */}
-            <div className="bg-gradient-to-r from-indigo-500/10 to-purple-500/10 backdrop-blur-sm border border-indigo-200/50 rounded-2xl p-6 shadow-lg">
+            <div className="group relative bg-gradient-to-br from-indigo-500/10 to-purple-500/10 dark:from-indigo-400/10 dark:to-purple-400/10 backdrop-blur-sm border border-indigo-200/50 dark:border-indigo-700/50 rounded-2xl p-6 shadow-lg hover:shadow-xl transition-all duration-300">
               <div className="flex items-start space-x-3">
-                <div className="bg-indigo-100 p-2 rounded-full flex-shrink-0">
+                <div className="bg-indigo-100 dark:bg-indigo-900/50 p-3 rounded-full flex-shrink-0 shadow-inner">
                   <span className="text-lg">💡</span>
                 </div>
                 <div>
-                  <h3 className="font-semibold text-indigo-800 mb-2">
+                  <h3 className="font-semibold text-indigo-800 dark:text-indigo-300 mb-3 text-lg">
                     How to Use
                   </h3>
-                  <ul className="text-sm text-indigo-700 space-y-1">
-                    <li>• Upload an image or use live camera</li>
-                    <li>• Ensure good lighting and clear view</li>
-                    <li>• Place currency note flat and centered</li>
-                    <li>• Results above 90% confidence are considered valid</li>
+                  <ul className="text-sm text-indigo-700 dark:text-indigo-300 space-y-2">
+                    <li className="flex items-center space-x-2">
+                      <span className="w-1.5 h-1.5 bg-indigo-500 rounded-full"></span>
+                      <span>Upload an image or use live camera</span>
+                    </li>
+                    <li className="flex items-center space-x-2">
+                      <span className="w-1.5 h-1.5 bg-indigo-500 rounded-full"></span>
+                      <span>Ensure good lighting and clear view</span>
+                    </li>
+                    <li className="flex items-center space-x-2">
+                      <span className="w-1.5 h-1.5 bg-indigo-500 rounded-full"></span>
+                      <span>Place currency note flat and centered</span>
+                    </li>
+                    <li className="flex items-center space-x-2">
+                      <span className="w-1.5 h-1.5 bg-indigo-500 rounded-full"></span>
+                      <span>
+                        Results above 90% confidence are considered valid
+                      </span>
+                    </li>
                   </ul>
                 </div>
               </div>
             </div>
 
             {/* Supported Currency */}
-            <div className="bg-gradient-to-r from-green-500/10 to-emerald-500/10 backdrop-blur-sm border border-green-200/50 rounded-2xl p-6 shadow-lg">
+            <div className="group relative bg-gradient-to-br from-green-500/10 to-emerald-500/10 dark:from-green-400/10 dark:to-emerald-400/10 backdrop-blur-sm border border-green-200/50 dark:border-green-700/50 rounded-2xl p-6 shadow-lg hover:shadow-xl transition-all duration-300">
               <div className="flex items-start space-x-3">
-                <div className="bg-green-100 p-2 rounded-full flex-shrink-0">
+                <div className="bg-green-100 dark:bg-green-900/50 p-3 rounded-full flex-shrink-0 shadow-inner">
                   <span className="text-lg">💵</span>
                 </div>
                 <div>
-                  <h3 className="font-semibold text-green-800 mb-2">
+                  <h3 className="font-semibold text-green-800 dark:text-green-300 mb-3 text-lg">
                     Supported Denominations
                   </h3>
-                  <div className="grid grid-cols-2 gap-2 text-sm text-green-700">
-                    <div>• Rp 1.000</div>
-                    <div>• Rp 2.000</div>
-                    <div>• Rp 5.000</div>
-                    <div>• Rp 10.000</div>
-                    <div>• Rp 20.000</div>
-                    <div>• Rp 50.000</div>
-                    <div>• Rp 100.000</div>
+                  <div className="grid grid-cols-2 gap-3 text-sm text-green-700 dark:text-green-300">
+                    {[
+                      "Rp 1.000",
+                      "Rp 2.000",
+                      "Rp 5.000",
+                      "Rp 10.000",
+                      "Rp 20.000",
+                      "Rp 50.000",
+                      "Rp 100.000",
+                    ].map((denom, idx) => (
+                      <div
+                        key={idx}
+                        className="flex items-center space-x-2 bg-green-50 dark:bg-green-900/30 rounded-lg p-2 hover:bg-green-100 dark:hover:bg-green-900/50 transition-colors duration-200"
+                      >
+                        <span className="w-2 h-2 bg-green-500 rounded-full"></span>
+                        <span className="font-medium">{denom}</span>
+                      </div>
+                    ))}
                   </div>
                 </div>
               </div>
@@ -508,13 +512,19 @@ const CurrencyDetector: React.FC = () => {
         </div>
       </div>
 
-      {/* Footer */}
-      <div className="bg-white/50 backdrop-blur-sm border-t border-gray-200/50 mt-16">
-        <div className="container mx-auto px-4 py-6">
-          <div className="text-center text-gray-600">
-            <p className="text-sm">
-              Powered by TensorFlow.js & AI • Made with ❤️ for Indonesian
-              Currency Detection
+      {/* Enhanced Footer */}
+      <div className="relative bg-white/60 dark:bg-gray-900/60 backdrop-blur-md border-t border-gray-200/50 dark:border-gray-700/50 mt-16">
+        <div className="absolute inset-0 bg-gradient-to-r from-blue-600/5 to-purple-600/5 dark:from-blue-400/5 dark:to-purple-400/5"></div>
+        <div className="relative container mx-auto px-4 py-8">
+          <div className="text-center">
+            <div className="flex items-center justify-center space-x-2 mb-2">
+              <span className="text-lg">🚀</span>
+              <p className="text-sm font-medium text-gray-600 dark:text-gray-300">
+                Powered by TensorFlow.js & AI
+              </p>
+            </div>
+            <p className="text-xs text-gray-500 dark:text-gray-400">
+              Made with ❤️ for Indonesian Currency Detection
             </p>
           </div>
         </div>
