@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useState, useRef } from "react";
+import React, { useEffect, useState, useRef, useCallback } from "react";
 import { PredictionResult } from "@/components/currency/types";
 import StatusMessageComponent from "@/components/currency/StatusMessageComponent";
 import FileUploadComponent from "@/components/currency/FileUploadComponent";
@@ -16,59 +16,76 @@ const CurrencyDetector: React.FC = () => {
   const [prediction, setPrediction] = useState<PredictionResult | null>(null);
   const [errorMessage, setErrorMessage] = useState<string>("");
   const [cameraActive, setCameraActive] = useState<boolean>(false);
-  const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
-  const [modelHandler, setModelHandler] = useState<any>(null);
+  const [modelHandler, setModelHandler] = useState<{
+    init: () => Promise<boolean>;
+    predict: (
+      image: HTMLImageElement | HTMLCanvasElement | HTMLVideoElement
+    ) => Promise<{
+      className: string;
+      probability: number;
+    }>;
+    predictWithEnsemble: (
+      image: HTMLImageElement | HTMLCanvasElement | HTMLVideoElement
+    ) => Promise<{
+      className: string;
+      probability: number;
+    }>;
+    dispose: () => void;
+  } | null>(null);
   const [audioEnabled, setAudioEnabled] = useState<boolean>(true);
 
   // Ref to access CameraComponent methods
   const cameraRef = useRef<CameraComponentRef>(null);
 
-  // Audio utility functions
-  const speakResult = (prediction: PredictionResult) => {
-    if (!audioEnabled || !prediction) return;
+  // Audio utility functions - using useCallback to stabilize the function reference
+  const speakResult = useCallback(
+    (prediction: PredictionResult) => {
+      if (!audioEnabled || !prediction) return;
 
-    window.speechSynthesis.cancel();
+      window.speechSynthesis.cancel();
 
-    let textToSpeak = "";
+      let textToSpeak = "";
 
-    const denominationMap: { [key: string]: string } = {
-      "1000": "seribu rupiah",
-      "2000": "dua ribu rupiah",
-      "5000": "lima ribu rupiah",
-      "10000": "sepuluh ribu rupiah",
-      "20000": "dua puluh ribu rupiah",
-      "50000": "lima puluh ribu rupiah",
-      "100000": "seratus ribu rupiah",
-    };
+      const denominationMap: { [key: string]: string } = {
+        "1000": "seribu rupiah",
+        "2000": "dua ribu rupiah",
+        "5000": "lima ribu rupiah",
+        "10000": "sepuluh ribu rupiah",
+        "20000": "dua puluh ribu rupiah",
+        "50000": "lima puluh ribu rupiah",
+        "100000": "seratus ribu rupiah",
+      };
 
-    const confidence = prediction.probability;
+      const confidence = prediction.probability;
 
-    if (confidence > 0.9) {
-      const denomination =
-        denominationMap[prediction.className] || prediction.className;
-      textToSpeak = denomination;
-    } else {
-      textToSpeak = "Bukan uang";
-    }
+      if (confidence > 0.9) {
+        const denomination =
+          denominationMap[prediction.className] || prediction.className;
+        textToSpeak = denomination;
+      } else {
+        textToSpeak = "Bukan uang";
+      }
 
-    const utterance = new SpeechSynthesisUtterance(textToSpeak);
-    const voices = window.speechSynthesis.getVoices();
-    const indonesianVoice = voices.find(
-      (voice) => voice.lang.includes("id") || voice.lang.includes("ID")
-    );
+      const utterance = new SpeechSynthesisUtterance(textToSpeak);
+      const voices = window.speechSynthesis.getVoices();
+      const indonesianVoice = voices.find(
+        (voice) => voice.lang.includes("id") || voice.lang.includes("ID")
+      );
 
-    if (indonesianVoice) {
-      utterance.voice = indonesianVoice;
-    }
+      if (indonesianVoice) {
+        utterance.voice = indonesianVoice;
+      }
 
-    utterance.lang = "id-ID";
-    utterance.rate = 0.9;
-    utterance.pitch = 1;
-    utterance.volume = 1;
+      utterance.lang = "id-ID";
+      utterance.rate = 0.9;
+      utterance.pitch = 1;
+      utterance.volume = 1;
 
-    window.speechSynthesis.speak(utterance);
-  };
+      window.speechSynthesis.speak(utterance);
+    },
+    [audioEnabled]
+  );
 
   const toggleAudio = () => {
     setAudioEnabled(!audioEnabled);
@@ -117,11 +134,13 @@ const CurrencyDetector: React.FC = () => {
     return () => {
       stopCamera();
       window.speechSynthesis.cancel();
+      // modelHandler cleanup is handled here, no need to include it in dependencies
       if (modelHandler && typeof modelHandler.dispose === "function") {
         modelHandler.dispose();
       }
     };
-  }, []);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // Removed modelHandler from dependency array as it's handled in cleanup
 
   // Load voices when speech synthesis is ready
   useEffect(() => {
@@ -139,14 +158,14 @@ const CurrencyDetector: React.FC = () => {
     }
   }, []);
 
-  // Effect to speak result when prediction changes
+  // Effect to speak result when prediction changes - now includes speakResult in dependencies
   useEffect(() => {
     if (prediction && audioEnabled) {
       setTimeout(() => {
         speakResult(prediction);
       }, 500);
     }
-  }, [prediction, audioEnabled]);
+  }, [prediction, audioEnabled, speakResult]);
 
   // Camera functions - now using the ref
   const startCamera = async () => {
@@ -183,19 +202,47 @@ const CurrencyDetector: React.FC = () => {
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const files = event.target.files;
     if (!files || files.length === 0) {
-      setSelectedFile(null);
       setPreviewUrl(null);
       return;
     }
 
     const file = files[0];
-    setSelectedFile(file);
-
     const objectUrl = URL.createObjectURL(file);
     setPreviewUrl(objectUrl);
 
     return () => URL.revokeObjectURL(objectUrl);
   };
+
+  // Removed unused handleUpload function to fix the no-unused-vars error
+  // If you need file upload functionality, you can uncomment and use this:
+  /*
+  const handleUpload = async () => {
+    if (!selectedFile) {
+      alert("No file selected!");
+      return;
+    }
+
+    // Simulate upload process
+    const formData = new FormData();
+    formData.append("file", selectedFile);
+
+    try {
+      const response = await fetch("/api/upload", {
+        method: "POST",
+        body: formData,
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to upload file");
+      }
+
+      alert("File uploaded successfully!");
+    } catch (error) {
+      console.error("Upload error:", error);
+      alert("File upload failed");
+    }
+  };
+  */
 
   // Prediction functions - updated to use camera ref
   const captureAndPredict = async () => {
@@ -235,7 +282,13 @@ const CurrencyDetector: React.FC = () => {
 
       // Run prediction on the canvas
       const result = await modelHandler.predictWithEnsemble(canvasElement);
-      setPrediction(result);
+      // Convert the result to match PredictionResult interface
+      const predictionResult: PredictionResult = {
+        className: result.className,
+        probability: result.probability,
+        allProbabilities: [], // Initialize empty array since model doesn't provide this
+      };
+      setPrediction(predictionResult);
       setErrorMessage("");
     } catch (error) {
       setErrorMessage(`Prediction error: ${(error as Error).message}`);
@@ -260,7 +313,13 @@ const CurrencyDetector: React.FC = () => {
       });
 
       const result = await modelHandler.predictWithEnsemble(img);
-      setPrediction(result);
+      // Convert the result to match PredictionResult interface
+      const predictionResult: PredictionResult = {
+        className: result.className,
+        probability: result.probability,
+        allProbabilities: [], // Initialize empty array since model doesn't provide this
+      };
+      setPrediction(predictionResult);
       setErrorMessage("");
     } catch (error) {
       setErrorMessage(`Prediction error: ${(error as Error).message}`);

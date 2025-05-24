@@ -1,3 +1,4 @@
+import Image from "next/image";
 import React from "react";
 
 interface FileUploadProps {
@@ -96,10 +97,13 @@ const FileUploadComponent: React.FC<FileUploadProps> = ({
             <div className="absolute -inset-1 bg-gradient-to-r from-purple-600 to-pink-600 rounded-2xl blur opacity-25 group-hover:opacity-40 transition duration-300"></div>
             <div className="relative bg-white dark:bg-gray-800 p-4 rounded-2xl shadow-xl">
               <div className="relative overflow-hidden rounded-xl">
-                <img
-                  src={previewUrl}
+                <Image
+                  src={previewUrl || "/placeholder.png"} // Gunakan placeholder jika previewUrl null
                   alt="Currency Preview"
+                  width={500} // Tentukan ukuran agar Next.js bisa mengoptimalkan
+                  height={400}
                   className="w-full h-auto max-h-80 object-contain mx-auto rounded-xl shadow-lg transition-all duration-300 group-hover:scale-[1.02]"
+                  unoptimized={true} // Tambahkan ini jika previewUrl adalah URL object (bukan path statis)
                 />
                 {/* Overlay gradient */}
                 <div className="absolute inset-0 bg-gradient-to-b from-transparent to-black/5 dark:to-white/5 rounded-xl"></div>

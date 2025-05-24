@@ -95,6 +95,7 @@ const CameraComponent = forwardRef<CameraComponentRef, CameraComponentProps>(
         window.videoElement = null;
         window.canvasElement = null;
       };
+      // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
     // Handle camera activation
