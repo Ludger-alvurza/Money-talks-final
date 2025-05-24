@@ -18,8 +18,14 @@ export default function Home() {
   const [speechSupported, setSpeechSupported] = useState(false);
   const [debugInfo, setDebugInfo] = useState<string[]>([]);
   const [recognitionStatus, setRecognitionStatus] = useState("Initializing...");
+  const [permissionGranted, setPermissionGranted] = useState(false);
+  const [isSpeaking, setIsSpeaking] = useState(false);
+  const [isInitialized, setIsInitialized] = useState(false);
   const router = useRouter();
   const recognitionRef = useRef<SpeechRecognition | null>(null);
+  const isProcessingCommand = useRef(false);
+  const hasSpokenWelcome = useRef(false);
+  const welcomeTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   // Add debug message
   const addDebug = useCallback((message: string) => {
@@ -30,204 +36,424 @@ export default function Home() {
     ]);
   }, []);
 
-  // Text-to-speech function
+  // Text-to-speech function with speech recognition management
   const speak = useCallback(
     (text: string) => {
       addDebug(`Speaking: "${text}"`);
       if ("speechSynthesis" in window) {
+        // Stop speech recognition before speaking
+        if (recognitionRef.current && isListening) {
+          addDebug("🛑 Stopping recognition before TTS");
+          try {
+            recognitionRef.current.stop();
+          } catch (e) {
+            addDebug(`Error stopping recognition: ${e}`);
+          }
+        }
+
         // Stop any current speech
         speechSynthesis.cancel();
+        setIsSpeaking(true);
 
         const utterance = new SpeechSynthesisUtterance(text);
         utterance.lang = "id-ID";
         utterance.rate = 0.9;
         utterance.volume = 0.8;
 
-        utterance.onstart = () => addDebug("Speech started");
-        utterance.onend = () => addDebug("Speech ended");
-        utterance.onerror = (e) => addDebug(`Speech error: ${e.error}`);
+        utterance.onstart = () => {
+          addDebug("🔊 Speech started");
+          setIsSpeaking(true);
+        };
+
+        utterance.onend = () => {
+          addDebug("🔇 Speech ended - restarting recognition");
+          setIsSpeaking(false);
+
+          // Restart recognition after TTS finishes
+          setTimeout(() => {
+            if (recognitionRef.current && !isProcessingCommand.current) {
+              try {
+                addDebug("🔄 Restarting recognition after TTS");
+                recognitionRef.current.start();
+              } catch (error) {
+                addDebug(`❌ Failed to restart after TTS: ${error}`);
+              }
+            }
+          }, 500);
+        };
+
+        utterance.onerror = (e) => {
+          addDebug(`❌ Speech error: ${e.error}`);
+          setIsSpeaking(false);
+
+          // Try to restart recognition even if TTS failed
+          setTimeout(() => {
+            if (recognitionRef.current && !isProcessingCommand.current) {
+              try {
+                addDebug("🔄 Restarting recognition after TTS error");
+                recognitionRef.current.start();
+              } catch (error) {
+                addDebug(`❌ Failed to restart after TTS error: ${error}`);
+              }
+            }
+          }, 500);
+        };
 
         speechSynthesis.speak(utterance);
+      } else {
+        addDebug("❌ Speech synthesis not supported");
       }
     },
-    [addDebug]
+    [addDebug, isListening]
   );
 
-  // Handle voice commands
+  // Handle voice commands with better matching
   const handleVoiceCommand = useCallback(
     (command: string) => {
+      if (isProcessingCommand.current) {
+        addDebug("Already processing a command, skipping...");
+        return;
+      }
+
+      isProcessingCommand.current = true;
       addDebug(`Processing command: "${command}"`);
 
-      const commands = [
-        "buka halaman deteksi uang",
-        "mulai deteksi",
-        "deteksi uang",
-        "scan uang",
-        "periksa uang",
-        "cek uang",
-        "buka deteksi",
-        "mulai scan",
-        "halaman deteksi",
-        "deteksi",
+      const normalizedCommand = command.toLowerCase().trim();
+
+      // Define command patterns with more flexible matching
+      const commandPatterns = [
+        // Main navigation commands
+        /(?:buka|mulai|jalankan).*(?:halaman|page).*(?:deteksi|detection).*(?:uang|money)/i,
+        /(?:buka|mulai|jalankan).*(?:deteksi|detection).*(?:uang|money)/i,
+        /(?:mulai|start).*(?:deteksi|detection)/i,
+        /(?:deteksi|detection).*(?:uang|money)/i,
+        /(?:scan|periksa|cek).*(?:uang|money)/i,
+        /(?:buka|open).*(?:deteksi|detection)/i,
+        /(?:halaman|page).*(?:deteksi|detection)/i,
+        // Simple commands
+        /^(?:deteksi|detection)$/i,
+        /^(?:mulai|start)$/i,
+        /^(?:scan|periksa|cek)$/i,
+        // Additional patterns for better recognition
+        /(?:buka).*(?:deteksi)/i,
+        /(?:mulai).*(?:uang)/i,
+        /(?:deteksi).*(?:mata)/i, // "deteksi mata uang"
       ];
 
-      // Check for partial matches too
-      const foundCommand = commands.find(
-        (cmd) =>
-          command.includes(cmd) ||
-          cmd.split(" ").every((word) => command.includes(word))
+      const isCommandMatch = commandPatterns.some((pattern) =>
+        pattern.test(normalizedCommand)
       );
 
-      if (foundCommand) {
-        addDebug(`Command matched: "${foundCommand}"`);
+      if (isCommandMatch) {
+        addDebug(`✅ Command matched! Navigating to detection page...`);
         speak("Membuka halaman deteksi uang");
+
+        // Navigate after a short delay
         setTimeout(() => {
+          addDebug("Executing navigation to /money-talks");
           router.push("/money-talks");
-        }, 1000);
+          isProcessingCommand.current = false;
+        }, 1500);
       } else {
-        addDebug(`No command match found for: "${command}"`);
+        addDebug(`❌ No command match found for: "${normalizedCommand}"`);
+        isProcessingCommand.current = false;
       }
     },
     [addDebug, router, speak]
   );
 
-  // Initialize speech recognition
-  useEffect(() => {
-    if (typeof window !== "undefined") {
-      addDebug("Checking for speech recognition support...");
-
-      const SpeechRecognition =
-        window.SpeechRecognition || window.webkitSpeechRecognition;
-
-      if (SpeechRecognition) {
-        addDebug("Speech recognition supported!");
-        setSpeechSupported(true);
-        setRecognitionStatus("Supported");
-
-        const recognition = new SpeechRecognition();
-        recognitionRef.current = recognition;
-
-        // Configuration
-        recognition.continuous = true;
-        recognition.interimResults = true;
-        recognition.lang = "id-ID";
-        recognition.maxAlternatives = 1;
-
-        // Event handlers
-        recognition.onstart = () => {
-          addDebug("Recognition started");
-          setIsListening(true);
-          setRecognitionStatus("Listening...");
-        };
-
-        recognition.onend = () => {
-          addDebug("Recognition ended");
-          setIsListening(false);
-          setRecognitionStatus("Stopped");
-
-          // Auto-restart if not manually stopped
-          setTimeout(() => {
-            if (recognitionRef.current && !isListening) {
-              try {
-                addDebug("Auto-restarting recognition...");
-                recognition.start();
-              } catch (e) {
-                addDebug(`Auto-restart failed: ${e}`);
-              }
-            }
-          }, 1000);
-        };
-
-        recognition.onerror = (event: SpeechRecognitionErrorEvent) => {
-          addDebug(
-            `Recognition error: ${event.error} - ${
-              event.message || "No message"
-            }`
-          );
-          setRecognitionStatus(`Error: ${event.error}`);
-
-          // Handle specific errors
-          if (event.error === "not-allowed") {
-            addDebug("Permission denied. Please allow microphone access.");
-            setRecognitionStatus("Permission denied");
-          } else if (event.error === "no-speech") {
-            addDebug("No speech detected. Will restart...");
-          }
-        };
-
-        recognition.onresult = (event: SpeechRecognitionEvent) => {
-          let interim = "";
-          let final = "";
-
-          for (let i = event.resultIndex; i < event.results.length; i++) {
-            const transcript = event.results[i][0].transcript;
-            if (event.results[i].isFinal) {
-              final += transcript;
-            } else {
-              interim += transcript;
-            }
-          }
-
-          if (interim) {
-            setInterimTranscript(interim);
-            addDebug(`Interim: "${interim}"`);
-          }
-
-          if (final) {
-            const finalLower = final.toLowerCase().trim();
-            setTranscript(finalLower);
-            setInterimTranscript("");
-            addDebug(`Final: "${finalLower}"`);
-            handleVoiceCommand(finalLower);
-          }
-        };
-
-        recognition.onsoundstart = () => {
-          addDebug("Sound detected");
-        };
-
-        recognition.onspeechstart = () => {
-          addDebug("Speech detected");
-        };
-
-        recognition.onnomatch = () => {
-          addDebug("No match found");
-        };
-
-        // Start recognition after a delay
-        const startTimer = setTimeout(() => {
-          try {
-            addDebug("Starting initial recognition...");
-            recognition.start();
-          } catch (e) {
-            addDebug(`Failed to start: ${e}`);
-          }
-        }, 2000);
-
-        return () => {
-          clearTimeout(startTimer);
-          if (recognition) {
-            recognition.stop();
-          }
-        };
-      } else {
-        addDebug("Speech recognition not supported in this browser");
-        setSpeechSupported(false);
-        setRecognitionStatus("Not supported");
-      }
+  // Request microphone permission
+  const requestMicrophonePermission = useCallback(async () => {
+    try {
+      addDebug("Requesting microphone permission...");
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      stream.getTracks().forEach((track) => track.stop()); // Stop the stream immediately
+      setPermissionGranted(true);
+      addDebug("✅ Microphone permission granted");
+      return true;
+    } catch (error) {
+      addDebug(`❌ Microphone permission denied: ${error}`);
+      setPermissionGranted(false);
+      return false;
     }
-  }, [addDebug, handleVoiceCommand, isListening]);
+  }, [addDebug]);
 
-  // Announce page content when loaded
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      speak(
-        "Selamat datang di aplikasi Money Detector. Deteksi keaslian uang dengan AI. Katakan 'buka halaman deteksi uang' untuk memulai atau tekan tombol mulai deteksi."
+  // Start speech recognition
+  const startRecognition = useCallback(() => {
+    if (!recognitionRef.current || isListening || isSpeaking) {
+      addDebug(
+        `Cannot start recognition - listening: ${isListening}, speaking: ${isSpeaking}`
       );
-    }, 3000);
+      return;
+    }
 
-    return () => clearTimeout(timer);
-  }, [speak]);
+    try {
+      addDebug("🎤 Starting speech recognition...");
+      recognitionRef.current.start();
+    } catch (error) {
+      addDebug(`❌ Failed to start recognition: ${error}`);
+
+      // Try to restart after a short delay
+      setTimeout(() => {
+        if (recognitionRef.current && !isListening && !isSpeaking) {
+          try {
+            addDebug("🔄 Attempting to restart recognition...");
+            recognitionRef.current.start();
+          } catch (e) {
+            addDebug(`❌ Restart failed: ${e}`);
+          }
+        }
+      }, 2000);
+    }
+  }, [addDebug, isListening, isSpeaking]);
+
+  // Trigger welcome message
+  const triggerWelcomeMessage = useCallback(() => {
+    if (hasSpokenWelcome.current) {
+      addDebug("Welcome already spoken, skipping...");
+      return;
+    }
+
+    if (!speechSupported) {
+      addDebug("Speech not supported, skipping welcome");
+      return;
+    }
+
+    if (!permissionGranted) {
+      addDebug("Permission not granted, skipping welcome");
+      return;
+    }
+
+    addDebug("🎉 Triggering welcome message");
+    hasSpokenWelcome.current = true;
+
+    const welcomeText =
+      "Selamat datang di aplikasi Money Detector. Deteksi keaslian uang dengan AI. Katakan 'buka halaman deteksi uang' untuk memulai atau tekan tombol mulai deteksi.";
+
+    // Small delay to ensure everything is ready
+    setTimeout(() => {
+      speak(welcomeText);
+    }, 500);
+  }, [speechSupported, permissionGranted, speak, addDebug]);
+
+  // Initialize speech recognition - only once
+  useEffect(() => {
+    if (typeof window === "undefined" || recognitionRef.current) return;
+
+    addDebug("🚀 Initializing speech recognition...");
+
+    const SpeechRecognition =
+      window.SpeechRecognition || window.webkitSpeechRecognition;
+
+    if (!SpeechRecognition) {
+      addDebug("❌ Speech recognition not supported in this browser");
+      setSpeechSupported(false);
+      setRecognitionStatus("Not supported");
+      setIsInitialized(true);
+      return;
+    }
+
+    addDebug("✅ Speech recognition supported!");
+    setSpeechSupported(true);
+    setRecognitionStatus("Setting up...");
+
+    const recognition = new SpeechRecognition();
+    recognitionRef.current = recognition;
+
+    // Configuration
+    recognition.continuous = true;
+    recognition.interimResults = true;
+    recognition.lang = "id-ID";
+    recognition.maxAlternatives = 1;
+
+    // Event handlers
+    recognition.onstart = () => {
+      addDebug("🎤 Recognition started successfully");
+      setIsListening(true);
+      setRecognitionStatus("Listening...");
+    };
+
+    recognition.onend = () => {
+      addDebug("🔇 Recognition ended");
+      setIsListening(false);
+      setRecognitionStatus("Restarting...");
+
+      // Auto-restart with delay, but only if not processing command or speaking
+      setTimeout(() => {
+        if (
+          recognitionRef.current &&
+          !isProcessingCommand.current &&
+          !isSpeaking
+        ) {
+          try {
+            addDebug("🔄 Auto-restarting recognition...");
+            recognitionRef.current.start();
+          } catch (error) {
+            addDebug(`❌ Auto-restart failed: ${error}`);
+            setRecognitionStatus("Ready - Click to restart");
+          }
+        }
+      }, 1000);
+    };
+
+    recognition.onerror = (event: SpeechRecognitionErrorEvent) => {
+      addDebug(
+        `❌ Recognition error: ${event.error} - ${
+          event.message || "No message"
+        }`
+      );
+      setRecognitionStatus(`Error: ${event.error}`);
+
+      if (event.error === "not-allowed") {
+        addDebug("❌ Permission denied. Please allow microphone access.");
+        setRecognitionStatus("Permission denied");
+        setPermissionGranted(false);
+      } else if (event.error === "aborted") {
+        addDebug("⚠️ Recognition aborted - likely due to TTS interference");
+        setRecognitionStatus("Paused for TTS...");
+      } else if (event.error === "no-speech") {
+        addDebug("⚠️ No speech detected. Will restart...");
+        setRecognitionStatus("No speech - restarting...");
+      }
+    };
+
+    recognition.onresult = (event: SpeechRecognitionEvent) => {
+      let interim = "";
+      let final = "";
+
+      for (let i = event.resultIndex; i < event.results.length; i++) {
+        const result = event.results[i];
+        const transcript = result[0].transcript;
+
+        if (result.isFinal) {
+          final += transcript;
+          addDebug(
+            `📝 Final result: "${transcript}" (confidence: ${
+              result[0].confidence?.toFixed(2) || "N/A"
+            })`
+          );
+        } else {
+          interim += transcript;
+        }
+      }
+
+      if (interim) {
+        setInterimTranscript(interim);
+        addDebug(`👂 Interim: "${interim}"`);
+      }
+
+      if (final) {
+        const finalTranscript = final.toLowerCase().trim();
+        setTranscript(finalTranscript);
+        setInterimTranscript("");
+        addDebug(`✅ Final transcript: "${finalTranscript}"`);
+
+        // Process the command
+        handleVoiceCommand(finalTranscript);
+      }
+    };
+
+    recognition.onsoundstart = () => {
+      addDebug("🔊 Sound detected");
+    };
+
+    recognition.onspeechstart = () => {
+      addDebug("🗣️ Speech detected");
+    };
+
+    recognition.onnomatch = () => {
+      addDebug("❓ No match found for speech");
+    };
+
+    // Mark as initialized
+    setIsInitialized(true);
+    addDebug("🎯 Speech recognition initialization complete");
+
+    return () => {
+      if (recognition) {
+        addDebug("🛑 Stopping recognition on cleanup");
+        try {
+          recognition.stop();
+        } catch (e) {
+          addDebug(`Cleanup error: ${e}`);
+        }
+      }
+      if (welcomeTimeoutRef.current) {
+        clearTimeout(welcomeTimeoutRef.current);
+      }
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // Empty dependency array to run only once
+
+  // Request permission and start recognition after component mounts
+  useEffect(() => {
+    const initializeVoiceRecognition = async () => {
+      if (!isInitialized || !speechSupported) {
+        addDebug("Not ready for voice initialization yet");
+        return;
+      }
+
+      if (!permissionGranted) {
+        addDebug("Requesting microphone permission...");
+        const granted = await requestMicrophonePermission();
+        if (granted) {
+          addDebug("Permission granted, starting recognition...");
+          // Start recognition after permission is granted
+          setTimeout(() => {
+            startRecognition();
+          }, 1000);
+        }
+      } else {
+        addDebug("Permission already granted, starting recognition...");
+        setTimeout(() => {
+          startRecognition();
+        }, 500);
+      }
+    };
+
+    initializeVoiceRecognition();
+  }, [
+    isInitialized,
+    speechSupported,
+    permissionGranted,
+    requestMicrophonePermission,
+    startRecognition,
+    addDebug,
+  ]);
+
+  // Welcome message effect - separate from recognition initialization
+  useEffect(() => {
+    if (!isInitialized || !speechSupported || !permissionGranted) {
+      addDebug("Not ready for welcome message yet");
+      return;
+    }
+
+    if (hasSpokenWelcome.current) {
+      addDebug("Welcome already spoken");
+      return;
+    }
+
+    addDebug("Setting up welcome message timer...");
+
+    // Set up welcome message with longer delay to ensure everything is ready
+    welcomeTimeoutRef.current = setTimeout(() => {
+      addDebug("Welcome timer triggered");
+      triggerWelcomeMessage();
+    }, 4000); // Increased delay to 4 seconds
+
+    return () => {
+      if (welcomeTimeoutRef.current) {
+        clearTimeout(welcomeTimeoutRef.current);
+        welcomeTimeoutRef.current = null;
+      }
+    };
+  }, [
+    isInitialized,
+    speechSupported,
+    permissionGranted,
+    triggerWelcomeMessage,
+    addDebug,
+  ]);
 
   const handleStartDetection = () => {
     speak("Membuka halaman deteksi uang");
@@ -235,6 +461,43 @@ export default function Home() {
       router.push("/money-talks");
     }, 1000);
   };
+
+  // Manual restart function for debugging
+  const handleRestartRecognition = async () => {
+    if (recognitionRef.current) {
+      addDebug("🔄 Manual restart requested");
+
+      // Stop current recognition
+      try {
+        recognitionRef.current.stop();
+      } catch (e) {
+        addDebug(`Error stopping: ${e}`);
+      }
+
+      // Stop any TTS
+      if ("speechSynthesis" in window) {
+        speechSynthesis.cancel();
+        setIsSpeaking(false);
+      }
+
+      // Request permission again if needed
+      if (!permissionGranted) {
+        await requestMicrophonePermission();
+      }
+
+      // Start after delay
+      setTimeout(() => {
+        startRecognition();
+      }, 1000);
+    }
+  };
+
+  // Manual trigger for welcome message (for testing)
+  // const handleTriggerWelcome = () => {
+  //   addDebug("🎯 Manual welcome trigger");
+  //   hasSpokenWelcome.current = false; // Reset flag
+  //   triggerWelcomeMessage();
+  // };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-emerald-50 via-white to-green-50 dark:from-gray-900 dark:via-gray-800 dark:to-emerald-900 relative overflow-hidden">
@@ -250,22 +513,51 @@ export default function Home() {
         {/* Header with Mode Toggle and Voice Status */}
         <div className="absolute top-6 right-6 flex items-center gap-4">
           {speechSupported && (
-            <div className="flex items-center gap-2 bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm rounded-full px-4 py-2 shadow-lg">
+            <div
+              className="flex items-center gap-2 bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm rounded-full px-4 py-2 shadow-lg cursor-pointer hover:bg-white/90 dark:hover:bg-gray-800/90 transition-colors"
+              onClick={handleRestartRecognition}
+              title="Click to restart voice recognition"
+            >
               <div
-                className={`w-3 h-3 rounded-full ${
-                  isListening ? "bg-red-500 animate-pulse" : "bg-gray-400"
+                className={`w-3 h-3 rounded-full transition-colors ${
+                  isListening
+                    ? "bg-red-500 animate-pulse"
+                    : isSpeaking
+                    ? "bg-blue-500 animate-pulse"
+                    : permissionGranted
+                    ? "bg-yellow-500"
+                    : "bg-gray-400"
                 }`}
               ></div>
               <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                {recognitionStatus}
+                {isSpeaking ? "Speaking..." : recognitionStatus}
               </span>
             </div>
           )}
           <ModeToggle />
         </div>
 
-        {/* Debug Panel - Only show if there are debug messages */}
-        {debugInfo.length > 0 && <div></div>}
+        {/* Debug Panel - Show more info */}
+        {debugInfo.length > 0 && (
+          // <div className="absolute top-20 left-6 max-w-md bg-black/80 text-white text-xs p-4 rounded-lg font-mono max-h-40 overflow-y-auto">
+          //   <div className="mb-2 font-bold flex justify-between items-center">
+          //     <span>Debug Info:</span>
+          //     <button
+          //       onClick={handleTriggerWelcome}
+          //       className="bg-blue-600 hover:bg-blue-700 px-2 py-1 rounded text-xs"
+          //       title="Test welcome message"
+          //     >
+          //       🎵 Test Welcome
+          //     </button>
+          //   </div>
+          //   {debugInfo.map((info, index) => (
+          //     <div key={index} className="mb-1">
+          //       {info}
+          //     </div>
+          //   ))}
+          // </div>
+          <div></div>
+        )}
 
         {/* Main Content */}
         <main className="text-center max-w-4xl mx-auto">
@@ -279,33 +571,54 @@ export default function Home() {
                     fill="currentColor"
                     viewBox="0 0 24 24"
                   >
-                    <path d="M12 2c1.103 0 2 .897 2 2v7c0 1.103-.897 2-2 2s-2-.897-2-2V4c0-1.103.897-2 2-2zM19 7v2c0 3.859-3.141 7-7 7s-7-3.141-7-7V7c0-.552-.448-1-1-1s-1 .448-1 1v2c0 4.879 3.519 8.926 8 9.86V21H8c-.552 0-1 .448-1 1s.448 1 1 1h8c.552 0 1-.448 1-1s-.448-1-1-1h-3v-2.14c4.481-.934 8-4.981 8-9.86V7c0-.552-.448-1-1-1s-1 .448-1 1z" />
+                    <path d="M12 2c1.103 0 2 .897 2 2v7c0 1.103-.897 2-2 2s-2-.897-2-2V4c0-1.103.897-2 2-2zM19 7v2c0 3.859-3.141 7-7 7s-7-3.141-7-7V7c0-.552-.448-1-1-1s-1 .448-1 1v2c0 4.879 3.519 8.926 8 9.86V21H8c-.552 0-1-.448-1 1s.448 1 1 1h8c.552 0 1-.448 1-1s-.448-1-1-1h-3v-2.14c4.481-.934 8-4.981 8-9.86V7c0-.552-.448-1-1-1s-1 .448-1 1z" />
                   </svg>
                 </div>
                 <h3 className="text-lg font-semibold text-blue-800 dark:text-blue-200">
-                  Kontrol Suara Aktif
+                  Kontrol Suara{" "}
+                  {isListening
+                    ? "🟢 Mendengarkan"
+                    : isSpeaking
+                    ? "🔵 Berbicara"
+                    : permissionGranted
+                    ? "🟡 Siap"
+                    : "🔴 Tidak Aktif"}
                 </h3>
               </div>
               <p className="text-blue-700 dark:text-blue-300 text-sm leading-relaxed mb-3">
                 Perintah yang bisa digunakan:
               </p>
               <div className="grid grid-cols-2 gap-2 text-xs text-blue-600 dark:text-blue-400 mb-3">
-                <div>&quot;buka halaman deteksi uang&quot;</div>
+                <div>&quot;membuka halaman deteksi uang&quot;</div>
                 <div>&quot;mulai deteksi&quot;</div>
                 <div>&quot;deteksi uang&quot;</div>
                 <div>&quot;scan uang&quot;</div>
                 <div>&quot;periksa uang&quot;</div>
                 <div>&quot;cek uang&quot;</div>
                 <div>&quot;buka deteksi&quot;</div>
-                <div>&quot;halaman deteksi&quot;</div>
+                <div>&quot;deteksi&quot;</div>
               </div>
+
+              {!permissionGranted && (
+                <div className="p-3 bg-red-100 dark:bg-red-900/30 rounded border-l-4 border-red-400 mb-3">
+                  <p className="text-sm text-red-700 dark:text-red-300">
+                    ⚠️ Izin mikrofon diperlukan untuk kontrol suara.
+                    <button
+                      onClick={requestMicrophonePermission}
+                      className="ml-2 underline hover:no-underline"
+                    >
+                      Klik untuk mengizinkan
+                    </button>
+                  </p>
+                </div>
+              )}
 
               {/* Current transcript display */}
               <div className="space-y-2">
                 {interimTranscript && (
                   <div className="p-2 bg-yellow-100 dark:bg-yellow-900/30 rounded border-l-4 border-yellow-400">
                     <p className="text-xs text-yellow-700 dark:text-yellow-300">
-                      Mendengarkan:{" "}
+                      👂 Mendengarkan:{" "}
                       <span className="italic">
                         &quot;{interimTranscript}&quot;
                       </span>
@@ -316,7 +629,7 @@ export default function Home() {
                 {transcript && (
                   <div className="p-2 bg-green-100 dark:bg-green-900/30 rounded border-l-4 border-green-400">
                     <p className="text-xs text-green-700 dark:text-green-300">
-                      Terakhir didengar:{" "}
+                      ✅ Terakhir didengar:{" "}
                       <span className="font-medium">
                         &quot;{transcript}&quot;
                       </span>
