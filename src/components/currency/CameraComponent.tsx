@@ -648,21 +648,22 @@ const CameraComponent = forwardRef<CameraComponentRef, CameraComponentProps>(
               </p>
               <ul className="space-y-1 text-xs">
                 <li>
-                  • <strong>"Buka kamera"</strong> /{" "}
-                  <strong>"Open camera"</strong> - Turn on camera
+                  • <strong>&quot;Buka kamera&quot;</strong> /{" "}
+                  <strong>&quot;Open camera&quot;</strong> - Turn on camera
                 </li>
                 <li>
-                  • <strong>"Tutup kamera"</strong> /{" "}
-                  <strong>"Close camera"</strong> - Turn off camera
+                  • <strong>&quot;Tutup kamera&quot;</strong> /{" "}
+                  <strong>&quot;Close camera&quot;</strong> - Turn off camera
                 </li>
                 <li>
-                  • <strong>"Mulai deteksi uang"</strong> /{" "}
-                  <strong>"Detect money"</strong> - Start detection (camera
+                  • <strong>&quot;Mulai deteksi uang&quot;</strong> /{" "}
+                  <strong>&quot;Detect money&quot;</strong> - Start detection
+                  (camera stays on)
+                </li>
+                <li>
+                  • <strong>&quot;Foto&quot;</strong> /{" "}
+                  <strong>&quot;Capture&quot;</strong> - Take photo (camera
                   stays on)
-                </li>
-                <li>
-                  • <strong>"Foto"</strong> / <strong>"Capture"</strong> - Take
-                  photo (camera stays on)
                 </li>
               </ul>
             </div>

@@ -209,6 +209,7 @@ const CurrencyDetector: React.FC = () => {
         console.log("Speech recognition not supported");
       }
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // Handle voice commands
@@ -269,7 +270,7 @@ const CurrencyDetector: React.FC = () => {
         speakFeedback(helpText);
       }
     },
-    [cameraActive, isModelLoaded, isProcessing, audioEnabled]
+    [cameraActive, isModelLoaded, isProcessing, audioEnabled, speakFeedback] // Added speakFeedback to dependencies
   );
 
   // Start/Stop Voice Recognition
@@ -669,7 +670,7 @@ const CurrencyDetector: React.FC = () => {
                   <span className="text-sm text-gray-600 dark:text-gray-400">
                     Perintah terakhir:{" "}
                     <span className="font-semibold text-blue-600 dark:text-blue-400">
-                      "{lastCommand}"
+                      {lastCommand}
                     </span>
                   </span>
                 </div>
