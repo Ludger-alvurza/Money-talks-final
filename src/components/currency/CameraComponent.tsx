@@ -1,4 +1,11 @@
-import React, { useEffect, useImperativeHandle, forwardRef } from "react";
+import React, {
+  useEffect,
+  useImperativeHandle,
+  forwardRef,
+  useRef,
+  useCallback,
+  useState,
+} from "react";
 
 interface CameraComponentProps {
   isModelLoaded: boolean;
@@ -6,6 +13,7 @@ interface CameraComponentProps {
   cameraActive: boolean;
   toggleCamera: () => void;
   captureAndPredict: () => void;
+  audioEnabled: boolean; // Add this prop
   onCameraReady?: (
     videoElement: HTMLVideoElement,
     canvasElement: HTMLCanvasElement
@@ -27,6 +35,7 @@ const CameraComponent = forwardRef<CameraComponentRef, CameraComponentProps>(
       cameraActive,
       toggleCamera,
       captureAndPredict,
+      audioEnabled, // Add this
       onCameraReady,
     },
     ref
@@ -35,8 +44,55 @@ const CameraComponent = forwardRef<CameraComponentRef, CameraComponentProps>(
     const videoRef = React.useRef<HTMLVideoElement>(null);
     const canvasRef = React.useRef<HTMLCanvasElement>(null);
 
+    // Speech recognition refs and state
+    const recognitionRef = useRef<SpeechRecognition | null>(null);
+    const isRecognitionActiveRef = useRef(false);
+    const recognitionTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+    const lastCommandTimeRef = useRef<number>(0);
+    const [voiceStatus, setVoiceStatus] = useState<
+      "active" | "inactive" | "error"
+    >("inactive");
+
+    const COMMAND_COOLDOWN_MS = 1500; // Reduced cooldown for better responsiveness
+
+    // Audio utility function - centralized audio handler
+    const speakText = useCallback(
+      (text: string, priority: boolean = false) => {
+        if (!audioEnabled) return;
+
+        // Cancel previous speech if this is high priority
+        if (priority) {
+          window.speechSynthesis.cancel();
+        }
+
+        // Small delay to ensure previous cancel is processed
+        setTimeout(
+          () => {
+            const utterance = new SpeechSynthesisUtterance(text);
+            const voices = window.speechSynthesis.getVoices();
+            const indonesianVoice = voices.find(
+              (voice) => voice.lang.includes("id") || voice.lang.includes("ID")
+            );
+
+            if (indonesianVoice) {
+              utterance.voice = indonesianVoice;
+            }
+
+            utterance.lang = "id-ID";
+            utterance.rate = 0.9;
+            utterance.pitch = 1;
+            utterance.volume = 1;
+
+            window.speechSynthesis.speak(utterance);
+          },
+          priority ? 100 : 0
+        );
+      },
+      [audioEnabled]
+    );
+
     // Camera stream management
-    const startCameraStream = async () => {
+    const startCameraStream = useCallback(async () => {
       if (!videoRef.current) {
         throw new Error("Video element not available");
       }
@@ -53,21 +109,28 @@ const CameraComponent = forwardRef<CameraComponentRef, CameraComponentProps>(
         const stream = await navigator.mediaDevices.getUserMedia(constraints);
         videoRef.current.srcObject = stream;
         console.log("Camera stream started successfully");
+
+        // Give audio feedback when camera starts
+        speakText("Kamera diaktifkan", true);
       } catch (error) {
         console.error("Error starting camera stream:", error);
+        speakText("Gagal mengaktifkan kamera", true);
         throw error;
       }
-    };
+    }, [speakText]);
 
-    const stopCameraStream = () => {
+    const stopCameraStream = useCallback(() => {
       if (videoRef.current && videoRef.current.srcObject) {
         const stream = videoRef.current.srcObject as MediaStream;
         const tracks = stream.getTracks();
         tracks.forEach((track) => track.stop());
         videoRef.current.srcObject = null;
         console.log("Camera stream stopped");
+
+        // Give audio feedback when camera stops
+        speakText("Kamera dimatikan", true);
       }
-    };
+    }, [speakText]);
 
     // Expose methods through ref
     useImperativeHandle(ref, () => ({
@@ -77,26 +140,283 @@ const CameraComponent = forwardRef<CameraComponentRef, CameraComponentProps>(
       stopCameraStream,
     }));
 
-    // Expose video and canvas refs to window for global access and notify parent
+    // Enhanced voice command processing
+    const processVoiceCommand = useCallback(
+      (transcript: string) => {
+        const now = Date.now();
+        if (now - lastCommandTimeRef.current < COMMAND_COOLDOWN_MS) {
+          console.log("Voice command ignored: Too soon after last command");
+          return;
+        }
+
+        console.log("Voice command detected:", transcript);
+
+        // More flexible command patterns with variations
+        const commands = [
+          {
+            patterns: [
+              /\b(mulai\s+deteksi\s+uang|deteksi\s+uang|mulai\s+deteksi)\b/,
+              /\b(detect\s+money|start\s+detection)\b/,
+            ],
+            action: "detect",
+          },
+          {
+            patterns: [
+              /\b(tutup\s+kamera|matikan\s+kamera|close\s+camera)\b/,
+              /\b(turn\s+off\s+camera|stop\s+camera)\b/,
+            ],
+            action: "close_camera",
+          },
+          {
+            patterns: [
+              /\b(buka\s+kamera|nyalakan\s+kamera|open\s+camera)\b/,
+              /\b(turn\s+on\s+camera|start\s+camera)\b/,
+            ],
+            action: "open_camera",
+          },
+          {
+            patterns: [
+              /\b(foto|capture|ambil\s+gambar|tangkap)\b/,
+              /\b(take\s+photo|snap|shoot)\b/,
+            ],
+            action: "capture",
+          },
+        ];
+
+        // Find matching command
+        let executedCommand = false;
+        for (const command of commands) {
+          if (executedCommand) break;
+
+          for (const pattern of command.patterns) {
+            if (pattern.test(transcript)) {
+              executedCommand = true;
+              lastCommandTimeRef.current = now;
+
+              switch (command.action) {
+                case "open_camera":
+                  if (!cameraActive) {
+                    console.log("Voice command: Opening camera");
+                    toggleCamera();
+                  } else {
+                    console.log("Voice command: Camera already active");
+                    speakText("Kamera sudah aktif");
+                  }
+                  break;
+
+                case "close_camera":
+                  if (cameraActive) {
+                    console.log("Voice command: Closing camera");
+                    toggleCamera();
+                  } else {
+                    console.log("Voice command: Camera already inactive");
+                    speakText("Kamera sudah mati");
+                  }
+                  break;
+
+                case "detect":
+                case "capture":
+                  console.log(
+                    `Voice command: ${
+                      command.action === "detect"
+                        ? "Starting money detection"
+                        : "Capture image"
+                    }`
+                  );
+                  if (cameraActive && isModelLoaded && !isProcessing) {
+                    speakText("Memulai deteksi");
+                    captureAndPredict();
+                    // FIXED: Kamera tetap menyala setelah deteksi
+                    // Tidak ada perintah untuk mematikan kamera di sini
+                  } else {
+                    const reasons = [];
+                    if (!cameraActive) reasons.push("kamera tidak aktif");
+                    if (!isModelLoaded) reasons.push("model belum siap");
+                    if (isProcessing) reasons.push("sedang memproses");
+                    console.log(
+                      `Voice command: Cannot ${command.action} - ${reasons.join(
+                        ", "
+                      )}`
+                    );
+                    speakText(`Tidak dapat memproses: ${reasons.join(", ")}`);
+                  }
+                  break;
+              }
+              break;
+            }
+          }
+        }
+
+        if (!executedCommand) {
+          console.log("Voice command: No recognized command found");
+        }
+      },
+      [
+        cameraActive,
+        toggleCamera,
+        captureAndPredict,
+        isModelLoaded,
+        isProcessing,
+        speakText,
+      ]
+    );
+
+    // Speech Recognition Setup with improved error handling
+    const startSpeechRecognition = useCallback(() => {
+      const SpeechRecognition =
+        window.SpeechRecognition || window.webkitSpeechRecognition;
+
+      if (!SpeechRecognition) {
+        console.warn("Speech Recognition API not supported in this browser.");
+        setVoiceStatus("error");
+        return;
+      }
+
+      // Don't start if already active
+      if (isRecognitionActiveRef.current || recognitionRef.current) {
+        return;
+      }
+
+      try {
+        const recognition = new SpeechRecognition();
+        recognitionRef.current = recognition;
+        isRecognitionActiveRef.current = true;
+
+        recognition.continuous = true;
+        recognition.interimResults = false;
+        recognition.lang = "id-ID";
+        recognition.maxAlternatives = 3; // Increased for better accuracy
+
+        recognition.onstart = () => {
+          console.log("Voice recognition started.");
+          setVoiceStatus("active");
+        };
+
+        recognition.onerror = (event) => {
+          console.warn("Voice recognition error:", event.error);
+
+          // Clean up state
+          isRecognitionActiveRef.current = false;
+          recognitionRef.current = null;
+          setVoiceStatus("error");
+
+          // Only restart for recoverable errors
+          if (["network", "audio-capture", "no-speech"].includes(event.error)) {
+            scheduleRecognitionRestart();
+          }
+        };
+
+        recognition.onend = () => {
+          console.log("Voice recognition ended.");
+          isRecognitionActiveRef.current = false;
+          recognitionRef.current = null;
+          setVoiceStatus("inactive");
+
+          // Always restart recognition automatically
+          scheduleRecognitionRestart();
+        };
+
+        recognition.onresult = (event) => {
+          // Process all results to catch the best match
+          for (let i = event.resultIndex; i < event.results.length; i++) {
+            const result = event.results[i];
+            if (result.isFinal) {
+              // Try all alternatives for better command matching
+              for (let j = 0; j < result.length; j++) {
+                const transcript = result[j].transcript.toLowerCase().trim();
+                if (transcript && transcript.length > 2) {
+                  // Minimum length check
+                  processVoiceCommand(transcript);
+                  break; // Use first valid transcript
+                }
+              }
+            }
+          }
+        };
+
+        recognition.start();
+      } catch (error) {
+        console.error("Failed to start speech recognition:", error);
+        isRecognitionActiveRef.current = false;
+        recognitionRef.current = null;
+        setVoiceStatus("error");
+      }
+    }, [processVoiceCommand]);
+
+    const scheduleRecognitionRestart = useCallback(() => {
+      // Clear any existing timeout
+      if (recognitionTimeoutRef.current) {
+        clearTimeout(recognitionTimeoutRef.current);
+        recognitionTimeoutRef.current = null;
+      }
+
+      // Only schedule restart if not already active
+      if (!isRecognitionActiveRef.current && recognitionRef.current === null) {
+        recognitionTimeoutRef.current = setTimeout(() => {
+          if (
+            !isRecognitionActiveRef.current &&
+            recognitionRef.current === null
+          ) {
+            startSpeechRecognition();
+          }
+        }, 2000); // 2 second delay to prevent rapid restarts
+      }
+    }, [startSpeechRecognition]);
+
+    const stopSpeechRecognition = useCallback(() => {
+      console.log("Stopping speech recognition...");
+
+      // Clear restart timeout
+      if (recognitionTimeoutRef.current) {
+        clearTimeout(recognitionTimeoutRef.current);
+        recognitionTimeoutRef.current = null;
+      }
+
+      // Stop recognition if active
+      if (recognitionRef.current) {
+        try {
+          recognitionRef.current.abort();
+          console.log("Speech recognition aborted");
+        } catch (error) {
+          console.warn("Error aborting speech recognition:", error);
+        }
+      }
+
+      // Clean up state
+      isRecognitionActiveRef.current = false;
+      recognitionRef.current = null;
+      setVoiceStatus("inactive");
+    }, []);
+
+    // Initialize speech recognition
+    useEffect(() => {
+      const initTimeout = setTimeout(() => {
+        startSpeechRecognition();
+      }, 1000);
+
+      return () => {
+        clearTimeout(initTimeout);
+        stopSpeechRecognition();
+      };
+    }, [startSpeechRecognition, stopSpeechRecognition]);
+
+    // Initialize camera elements
     useEffect(() => {
       if (videoRef.current && canvasRef.current) {
         window.videoElement = videoRef.current;
         window.canvasElement = canvasRef.current;
 
-        // Notify parent that camera elements are ready
         if (onCameraReady) {
           onCameraReady(videoRef.current, canvasRef.current);
         }
       }
 
       return () => {
-        // Clean up on unmount
         stopCameraStream();
         window.videoElement = null;
         window.canvasElement = null;
       };
-      // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, []);
+    }, [stopCameraStream, onCameraReady]);
 
     // Handle camera activation
     useEffect(() => {
@@ -107,10 +427,59 @@ const CameraComponent = forwardRef<CameraComponentRef, CameraComponentProps>(
       } else if (!cameraActive) {
         stopCameraStream();
       }
-    }, [cameraActive]);
+    }, [cameraActive, startCameraStream, stopCameraStream]);
+
+    const getVoiceStatusDisplay = () => {
+      switch (voiceStatus) {
+        case "active":
+          return {
+            color: "green",
+            icon: "🎤",
+            text: "Voice commands active",
+            bgClass:
+              "bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-300",
+          };
+        case "error":
+          return {
+            color: "red",
+            icon: "🚫",
+            text: "Voice recognition error",
+            bgClass:
+              "bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-300",
+          };
+        default:
+          return {
+            color: "yellow",
+            icon: "⏳",
+            text: "Voice recognition starting...",
+            bgClass:
+              "bg-yellow-50 dark:bg-yellow-900/20 text-yellow-700 dark:text-yellow-300",
+          };
+      }
+    };
+
+    const voiceStatusInfo = getVoiceStatusDisplay();
 
     return (
       <div className="space-y-6">
+        {/* Voice Recognition Status */}
+        <div className="text-center">
+          <div
+            className={`inline-flex items-center space-x-2 ${voiceStatusInfo.bgClass} px-3 py-1 rounded-full text-xs`}
+          >
+            <div
+              className={`w-2 h-2 bg-${
+                voiceStatusInfo.color
+              }-500 rounded-full ${
+                voiceStatus === "active" ? "animate-pulse" : ""
+              }`}
+            ></div>
+            <span>
+              {voiceStatusInfo.icon} {voiceStatusInfo.text}
+            </span>
+          </div>
+        </div>
+
         {/* Camera Toggle Button */}
         <div className="text-center">
           <button
@@ -124,7 +493,6 @@ const CameraComponent = forwardRef<CameraComponentRef, CameraComponentProps>(
                 : "bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600 text-white shadow-green-200 dark:shadow-green-900/50"
             }`}
           >
-            {/* Button shine effect */}
             <div className="absolute inset-0 bg-white/20 transform scale-x-0 group-hover:scale-x-100 transition-transform duration-300 origin-left"></div>
 
             <div className="relative flex items-center space-x-3">
@@ -143,7 +511,6 @@ const CameraComponent = forwardRef<CameraComponentRef, CameraComponentProps>(
         {/* Camera Feed */}
         {cameraActive && (
           <div className="space-y-4">
-            {/* Video Container */}
             <div className="relative group">
               <div className="absolute -inset-1 bg-gradient-to-r from-green-600 to-teal-600 rounded-2xl blur opacity-25 group-hover:opacity-40 transition duration-300"></div>
               <div className="relative bg-white dark:bg-gray-800 p-4 rounded-2xl shadow-2xl">
@@ -192,7 +559,6 @@ const CameraComponent = forwardRef<CameraComponentRef, CameraComponentProps>(
                   )}
                 </div>
 
-                {/* Camera info */}
                 <div className="mt-4 text-center">
                   <p className="text-sm text-gray-600 dark:text-gray-400 font-medium">
                     📹 Camera is active - Position currency note in frame
@@ -212,7 +578,6 @@ const CameraComponent = forwardRef<CameraComponentRef, CameraComponentProps>(
                     : "bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 shadow-blue-200 dark:shadow-blue-900/50"
                 }`}
               >
-                {/* Button shine effect */}
                 <div className="absolute inset-0 bg-white/20 transform scale-x-0 group-hover:scale-x-100 transition-transform duration-300 origin-left"></div>
 
                 <div className="relative flex items-center space-x-3">
@@ -233,7 +598,7 @@ const CameraComponent = forwardRef<CameraComponentRef, CameraComponentProps>(
                           strokeLinecap="round"
                           strokeLinejoin="round"
                           strokeWidth={2}
-                          d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"
+                          d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0118.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"
                         />
                         <path
                           strokeLinecap="round"
@@ -271,6 +636,39 @@ const CameraComponent = forwardRef<CameraComponentRef, CameraComponentProps>(
         {/* Hidden canvas for processing */}
         <canvas ref={canvasRef} className="hidden" />
 
+        {/* Voice Commands Guide */}
+        <div className="bg-gradient-to-r from-purple-50 to-indigo-50 dark:from-purple-900/20 dark:to-indigo-900/20 border border-purple-200 dark:border-purple-800 rounded-xl p-4">
+          <div className="flex items-start space-x-3">
+            <div className="bg-purple-100 dark:bg-purple-900/50 p-2 rounded-full flex-shrink-0">
+              <span className="text-sm">🎤</span>
+            </div>
+            <div className="text-sm text-purple-700 dark:text-purple-300">
+              <p className="font-medium mb-2">
+                Voice Commands (Indonesian/English):
+              </p>
+              <ul className="space-y-1 text-xs">
+                <li>
+                  • <strong>"Buka kamera"</strong> /{" "}
+                  <strong>"Open camera"</strong> - Turn on camera
+                </li>
+                <li>
+                  • <strong>"Tutup kamera"</strong> /{" "}
+                  <strong>"Close camera"</strong> - Turn off camera
+                </li>
+                <li>
+                  • <strong>"Mulai deteksi uang"</strong> /{" "}
+                  <strong>"Detect money"</strong> - Start detection (camera
+                  stays on)
+                </li>
+                <li>
+                  • <strong>"Foto"</strong> / <strong>"Capture"</strong> - Take
+                  photo (camera stays on)
+                </li>
+              </ul>
+            </div>
+          </div>
+        </div>
+
         {/* Camera Instructions */}
         {!cameraActive && isModelLoaded && (
           <div className="bg-gradient-to-r from-gray-50 to-blue-50 dark:from-gray-800/50 dark:to-blue-900/20 border border-gray-200 dark:border-gray-700 rounded-xl p-4">
@@ -285,6 +683,9 @@ const CameraComponent = forwardRef<CameraComponentRef, CameraComponentProps>(
                   <li>• Place currency note flat and centered</li>
                   <li>• Keep camera steady when capturing</li>
                   <li>• Use rear camera for better quality</li>
+                  <li>
+                    • Camera will stay active after detection for continuous use
+                  </li>
                 </ul>
               </div>
             </div>
@@ -295,14 +696,15 @@ const CameraComponent = forwardRef<CameraComponentRef, CameraComponentProps>(
   }
 );
 
-// Add display name for debugging
 CameraComponent.displayName = "CameraComponent";
 
-// Add global declarations
+// Global declarations
 declare global {
   interface Window {
     videoElement: HTMLVideoElement | null;
     canvasElement: HTMLCanvasElement | null;
+    SpeechRecognition: typeof SpeechRecognition;
+    webkitSpeechRecognition: typeof SpeechRecognition;
   }
 }
 

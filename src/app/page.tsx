@@ -228,7 +228,7 @@ export default function Home() {
     hasSpokenWelcome.current = true;
 
     const welcomeText =
-      "Selamat datang di aplikasi Money Detector. Deteksi keaslian uang dengan AI. Katakan 'buka halaman deteksi uang' untuk memulai atau tekan tombol mulai deteksi.";
+      "Selamat datang di aplikasi Money Talks. Deteksi keaslian uang dengan AI. Katakan 'buka halaman deteksi uang' untuk memulai atau tekan tombol mulai deteksi.";
 
     // Small delay to ensure everything is ready
     setTimeout(() => {
@@ -657,16 +657,16 @@ export default function Home() {
 
           {/* Title */}
           <h1 className="text-5xl sm:text-7xl font-bold bg-gradient-to-r from-emerald-600 via-green-600 to-emerald-700 bg-clip-text text-transparent mb-6 animate-fade-in">
-            Money Detector
+            Money Talks
           </h1>
 
           {/* Subtitle */}
           <p className="text-xl sm:text-2xl text-gray-700 dark:text-gray-300 mb-4 font-medium">
-            Deteksi Keaslian Uang dengan AI
+            Deteksi Nominal Uang dengan AI
           </p>
 
           <p className="text-lg text-gray-600 dark:text-gray-400 mb-12 max-w-2xl mx-auto leading-relaxed">
-            Aplikasi canggih untuk mendeteksi keaslian uang kertas menggunakan
+            Aplikasi canggih untuk mendeteksi Nominal uang kertas menggunakan
             teknologi
             <span className="font-semibold text-emerald-600 dark:text-emerald-400">
               {" "}

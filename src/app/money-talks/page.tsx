@@ -35,8 +35,46 @@ const CurrencyDetector: React.FC = () => {
   } | null>(null);
   const [audioEnabled, setAudioEnabled] = useState<boolean>(true);
 
+  // Voice Recognition States
+  const [isListening, setIsListening] = useState<boolean>(false);
+  const [voiceRecognition, setVoiceRecognition] =
+    useState<SpeechRecognition | null>(null);
+  const [lastCommand, setLastCommand] = useState<string>("");
+  const [voiceSupported, setVoiceSupported] = useState<boolean>(false);
+
   // Ref to access CameraComponent methods
   const cameraRef = useRef<CameraComponentRef>(null);
+
+  // Welcome message and voice setup
+  const speakWelcomeMessage = useCallback(() => {
+    if (!audioEnabled) return;
+
+    window.speechSynthesis.cancel();
+
+    const welcomeText =
+      "Selamat datang di halaman deteksi uang rupiah Indonesia. " +
+      "Katakan 'buka kamera' untuk membuka kamera, " +
+      "'tutup kamera' untuk menutup kamera, " +
+      "'mulai deteksi' untuk memulai deteksi uang, " +
+      "atau 'matikan suara' untuk mematikan audio.";
+
+    const utterance = new SpeechSynthesisUtterance(welcomeText);
+    const voices = window.speechSynthesis.getVoices();
+    const indonesianVoice = voices.find(
+      (voice) => voice.lang.includes("id") || voice.lang.includes("ID")
+    );
+
+    if (indonesianVoice) {
+      utterance.voice = indonesianVoice;
+    }
+
+    utterance.lang = "id-ID";
+    utterance.rate = 0.8;
+    utterance.pitch = 1;
+    utterance.volume = 1;
+
+    window.speechSynthesis.speak(utterance);
+  }, [audioEnabled]);
 
   // Audio utility functions - using useCallback to stabilize the function reference
   const speakResult = useCallback(
@@ -62,9 +100,12 @@ const CurrencyDetector: React.FC = () => {
       if (confidence > 0.9) {
         const denomination =
           denominationMap[prediction.className] || prediction.className;
-        textToSpeak = denomination;
+        textToSpeak = `Terdeteksi uang ${denomination} dengan tingkat kepercayaan ${Math.round(
+          confidence * 100
+        )} persen`;
       } else {
-        textToSpeak = "Bukan uang";
+        textToSpeak =
+          "Bukan uang atau gambar tidak jelas, mohon coba dekatkan uang dengan baik. lalu tutup kamera dan coba lagi.";
       }
 
       const utterance = new SpeechSynthesisUtterance(textToSpeak);
@@ -87,6 +128,168 @@ const CurrencyDetector: React.FC = () => {
     [audioEnabled]
   );
 
+  const speakFeedback = useCallback(
+    (message: string) => {
+      if (!audioEnabled) return;
+
+      window.speechSynthesis.cancel();
+      const utterance = new SpeechSynthesisUtterance(message);
+      const voices = window.speechSynthesis.getVoices();
+      const indonesianVoice = voices.find(
+        (voice) => voice.lang.includes("id") || voice.lang.includes("ID")
+      );
+
+      if (indonesianVoice) {
+        utterance.voice = indonesianVoice;
+      }
+
+      utterance.lang = "id-ID";
+      utterance.rate = 0.9;
+      utterance.pitch = 1;
+      utterance.volume = 1;
+
+      window.speechSynthesis.speak(utterance);
+    },
+    [audioEnabled]
+  );
+
+  // Voice Recognition Setup
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const SpeechRecognition =
+        window.SpeechRecognition || window.webkitSpeechRecognition;
+
+      if (SpeechRecognition) {
+        setVoiceSupported(true);
+        const recognition = new SpeechRecognition();
+
+        recognition.continuous = true;
+        recognition.interimResults = false;
+        recognition.lang = "id-ID";
+
+        recognition.onstart = () => {
+          setIsListening(true);
+          console.log("Voice recognition started");
+        };
+
+        recognition.onend = () => {
+          setIsListening(false);
+          console.log("Voice recognition ended");
+          // Auto restart if audio is enabled
+          if (audioEnabled && voiceSupported) {
+            setTimeout(() => {
+              try {
+                recognition.start();
+              } catch (error) {
+                console.log("Recognition restart failed:", error);
+              }
+            }, 1000);
+          }
+        };
+
+        recognition.onerror = (event) => {
+          console.log("Voice recognition error:", event.error);
+          setIsListening(false);
+        };
+
+        recognition.onresult = (event) => {
+          const last = event.results.length - 1;
+          const command = event.results[last][0].transcript
+            .toLowerCase()
+            .trim();
+          setLastCommand(command);
+          console.log("Voice command received:", command);
+
+          handleVoiceCommand(command);
+        };
+
+        setVoiceRecognition(recognition);
+      } else {
+        setVoiceSupported(false);
+        console.log("Speech recognition not supported");
+      }
+    }
+  }, []);
+
+  // Handle voice commands
+  const handleVoiceCommand = useCallback(
+    (command: string) => {
+      console.log("Processing command:", command);
+
+      if (
+        command.includes("buka kamera") ||
+        command.includes("nyalakan kamera")
+      ) {
+        if (!cameraActive) {
+          startCamera();
+          speakFeedback("Kamera dibuka");
+        } else {
+          speakFeedback("Kamera sudah aktif");
+        }
+      } else if (
+        command.includes("tutup kamera") ||
+        command.includes("matikan kamera")
+      ) {
+        if (cameraActive) {
+          stopCamera();
+          speakFeedback("Kamera ditutup");
+        } else {
+          speakFeedback("Kamera sudah tidak aktif");
+        }
+      } else if (
+        command.includes("mulai deteksi") ||
+        command.includes("deteksi uang") ||
+        command.includes("foto")
+      ) {
+        if (cameraActive && isModelLoaded && !isProcessing) {
+          captureAndPredict();
+          speakFeedback("Memulai deteksi uang");
+        } else if (!cameraActive) {
+          speakFeedback("Silakan buka kamera terlebih dahulu");
+        } else if (!isModelLoaded) {
+          speakFeedback("Model masih dalam proses loading");
+        } else if (isProcessing) {
+          speakFeedback("Sedang memproses, tunggu sebentar");
+        }
+      } else if (
+        command.includes("matikan suara") ||
+        command.includes("diam")
+      ) {
+        toggleAudio();
+      } else if (
+        command.includes("nyalakan suara") ||
+        command.includes("aktifkan suara")
+      ) {
+        if (!audioEnabled) {
+          toggleAudio();
+        }
+      } else if (command.includes("bantuan") || command.includes("help")) {
+        const helpText =
+          "Perintah yang tersedia: buka kamera, tutup kamera, mulai deteksi, matikan suara, nyalakan suara";
+        speakFeedback(helpText);
+      }
+    },
+    [cameraActive, isModelLoaded, isProcessing, audioEnabled]
+  );
+
+  // Start/Stop Voice Recognition
+  const toggleVoiceRecognition = useCallback(() => {
+    if (!voiceSupported || !voiceRecognition) return;
+
+    if (isListening) {
+      voiceRecognition.stop();
+      speakFeedback("Pengenalan suara dihentikan");
+    } else {
+      try {
+        voiceRecognition.start();
+        speakFeedback("Pengenalan suara dimulai");
+      } catch (error) {
+        console.log("Failed to start voice recognition:", error);
+        speakFeedback("Gagal memulai pengenalan suara");
+      }
+    }
+  }, [voiceSupported, voiceRecognition, isListening, speakFeedback]);
+
   const toggleAudio = () => {
     setAudioEnabled(!audioEnabled);
     if (!audioEnabled) {
@@ -94,8 +297,23 @@ const CurrencyDetector: React.FC = () => {
       testUtterance.lang = "id-ID";
       testUtterance.rate = 0.9;
       window.speechSynthesis.speak(testUtterance);
+
+      // Start voice recognition when audio is enabled
+      if (voiceSupported && voiceRecognition && !isListening) {
+        setTimeout(() => {
+          try {
+            voiceRecognition.start();
+          } catch (error) {
+            console.log("Failed to start voice recognition:", error);
+          }
+        }, 2000);
+      }
     } else {
       window.speechSynthesis.cancel();
+      // Stop voice recognition when audio is disabled
+      if (voiceRecognition && isListening) {
+        voiceRecognition.stop();
+      }
     }
   };
 
@@ -118,6 +336,22 @@ const CurrencyDetector: React.FC = () => {
           setModelHandler(modelModule.default);
           setIsModelLoaded(true);
           setErrorMessage("");
+
+          // Speak welcome message after model is loaded
+          setTimeout(() => {
+            speakWelcomeMessage();
+          }, 1000); // Delay to ensure model is ready
+
+          // Start voice recognition after welcome message
+          if (voiceSupported && voiceRecognition && audioEnabled) {
+            setTimeout(() => {
+              try {
+                voiceRecognition.start();
+              } catch (error) {
+                console.log("Failed to start voice recognition:", error);
+              }
+            }, 8000); // Start after welcome message finishes
+          }
         } else {
           throw new Error(
             "modelHandler or init method not found in the imported module"
@@ -134,6 +368,9 @@ const CurrencyDetector: React.FC = () => {
     return () => {
       stopCamera();
       window.speechSynthesis.cancel();
+      if (voiceRecognition) {
+        voiceRecognition.stop();
+      }
       // modelHandler cleanup is handled here, no need to include it in dependencies
       if (modelHandler && typeof modelHandler.dispose === "function") {
         modelHandler.dispose();
@@ -193,8 +430,10 @@ const CurrencyDetector: React.FC = () => {
   const toggleCamera = () => {
     if (cameraActive) {
       stopCamera();
+      speakFeedback("Kamera ditutup");
     } else {
       startCamera();
+      speakFeedback("Kamera dibuka");
     }
   };
 
@@ -212,37 +451,6 @@ const CurrencyDetector: React.FC = () => {
 
     return () => URL.revokeObjectURL(objectUrl);
   };
-
-  // Removed unused handleUpload function to fix the no-unused-vars error
-  // If you need file upload functionality, you can uncomment and use this:
-  /*
-  const handleUpload = async () => {
-    if (!selectedFile) {
-      alert("No file selected!");
-      return;
-    }
-
-    // Simulate upload process
-    const formData = new FormData();
-    formData.append("file", selectedFile);
-
-    try {
-      const response = await fetch("/api/upload", {
-        method: "POST",
-        body: formData,
-      });
-
-      if (!response.ok) {
-        throw new Error("Failed to upload file");
-      }
-
-      alert("File uploaded successfully!");
-    } catch (error) {
-      console.error("Upload error:", error);
-      alert("File upload failed");
-    }
-  };
-  */
 
   // Prediction functions - updated to use camera ref
   const captureAndPredict = async () => {
@@ -364,16 +572,42 @@ const CurrencyDetector: React.FC = () => {
                   IDR Currency Detector
                 </h1>
                 <p className="text-gray-600 dark:text-gray-300 text-sm mt-1 font-medium">
-                  AI-Powered Indonesian Rupiah Recognition
+                  AI-Powered Indonesian Rupiah Recognition with Voice Control
                 </p>
               </div>
             </div>
 
             <div className="flex items-center space-x-4">
               <ModeToggle />
+
+              {/* Voice Recognition Toggle */}
+              {voiceSupported && (
+                <button
+                  onClick={toggleVoiceRecognition}
+                  className={`group relative px-4 py-3 rounded-xl font-semibold transition-all duration-300 transform hover:scale-105 shadow-xl overflow-hidden ${
+                    isListening
+                      ? "bg-gradient-to-r from-red-500 to-pink-500 hover:from-red-600 hover:to-pink-600 text-white shadow-red-200 dark:shadow-red-900/50"
+                      : "bg-gradient-to-r from-blue-500 to-indigo-500 hover:from-blue-600 hover:to-indigo-600 text-white shadow-blue-200 dark:shadow-blue-900/50"
+                  }`}
+                  title={
+                    isListening
+                      ? "Voice Recognition: ON (Click to disable)"
+                      : "Voice Recognition: OFF (Click to enable)"
+                  }
+                >
+                  <div className="absolute inset-0 bg-white/20 transform scale-x-0 group-hover:scale-x-100 transition-transform duration-300 origin-left"></div>
+                  <div className="relative flex items-center space-x-2">
+                    <span className="text-lg">{isListening ? "🎤" : "🎙️"}</span>
+                    <span className="hidden sm:inline">
+                      {isListening ? "LISTENING" : "VOICE"}
+                    </span>
+                  </div>
+                </button>
+              )}
+
               <button
                 onClick={toggleAudio}
-                className={`group relative px-6 py-3 rounded-xl font-semibold transition-all duration-300 transform hover:scale-105 shadow-xl overflow-hidden ${
+                className={`group relative px-3 py-3 rounded-xl font-semibold transition-all duration-300 transform hover:scale-105 shadow-xl overflow-hidden ${
                   audioEnabled
                     ? "bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600 text-white shadow-green-200 dark:shadow-green-900/50"
                     : "bg-gradient-to-r from-gray-500 to-slate-500 hover:from-gray-600 hover:to-slate-600 text-white shadow-gray-200 dark:shadow-gray-900/50"
@@ -397,17 +631,49 @@ const CurrencyDetector: React.FC = () => {
 
       {/* Main Content */}
       <div className="relative container mx-auto px-4 py-8 space-y-8">
-        {/* Audio Status Indicator with enhanced styling */}
+        {/* Voice Control Status */}
         {audioEnabled && (
-          <div className="group relative bg-gradient-to-r from-blue-500/10 to-purple-500/10 dark:from-blue-400/10 dark:to-purple-400/10 backdrop-blur-sm border border-blue-200/50 dark:border-blue-700/50 rounded-2xl p-6 shadow-lg hover:shadow-xl transition-all duration-300">
-            <div className="flex items-center justify-center space-x-3 text-blue-700 dark:text-blue-300">
-              <div className="bg-blue-100 dark:bg-blue-900/50 p-3 rounded-full shadow-inner">
-                <span className="text-lg animate-pulse">🔊</span>
+          <div className="space-y-4">
+            <div className="group relative bg-gradient-to-r from-blue-500/10 to-purple-500/10 dark:from-blue-400/10 dark:to-purple-400/10 backdrop-blur-sm border border-blue-200/50 dark:border-blue-700/50 rounded-2xl p-6 shadow-lg hover:shadow-xl transition-all duration-300">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center space-x-3 text-blue-700 dark:text-blue-300">
+                  <div className="bg-blue-100 dark:bg-blue-900/50 p-3 rounded-full shadow-inner">
+                    <span className="text-lg animate-pulse">🔊</span>
+                  </div>
+                  <div>
+                    <span className="font-medium block">
+                      Audio & Voice Control Aktif
+                    </span>
+                    <span className="text-sm opacity-75">
+                      Hasil deteksi akan diumumkan secara otomatis
+                    </span>
+                  </div>
+                </div>
+
+                {voiceSupported && (
+                  <div className="flex items-center space-x-2">
+                    <div
+                      className={`w-3 h-3 rounded-full ${
+                        isListening ? "bg-red-500 animate-pulse" : "bg-gray-400"
+                      }`}
+                    ></div>
+                    <span className="text-sm font-medium">
+                      {isListening ? "Mendengarkan..." : "Voice Standby"}
+                    </span>
+                  </div>
+                )}
               </div>
-              <span className="font-medium">
-                Audio output aktif - Hasil deteksi akan diumumkan secara
-                otomatis
-              </span>
+
+              {lastCommand && (
+                <div className="mt-4 p-3 bg-white/50 dark:bg-gray-800/50 rounded-lg">
+                  <span className="text-sm text-gray-600 dark:text-gray-400">
+                    Perintah terakhir:{" "}
+                    <span className="font-semibold text-blue-600 dark:text-blue-400">
+                      "{lastCommand}"
+                    </span>
+                  </span>
+                </div>
+              )}
             </div>
           </div>
         )}
@@ -473,6 +739,7 @@ const CurrencyDetector: React.FC = () => {
                   cameraActive={cameraActive}
                   toggleCamera={toggleCamera}
                   captureAndPredict={captureAndPredict}
+                  audioEnabled={audioEnabled} // Pass audioEnabled prop
                   onCameraReady={handleCameraReady}
                 />
               </div>
@@ -530,6 +797,10 @@ const CurrencyDetector: React.FC = () => {
                         Results above 90% confidence are considered valid
                       </span>
                     </li>
+                    <li className="flex items-center space-x-2">
+                      <span className="w-1.5 h-1.5 bg-indigo-500 rounded-full"></span>
+                      <span>Use voice commands for hands-free operation</span>
+                    </li>
                   </ul>
                 </div>
               </div>
@@ -579,7 +850,7 @@ const CurrencyDetector: React.FC = () => {
             <div className="flex items-center justify-center space-x-2 mb-2">
               <span className="text-lg">🚀</span>
               <p className="text-sm font-medium text-gray-600 dark:text-gray-300">
-                Powered by TensorFlow.js & AI
+                Powered by TensorFlow.js & AI with Voice Control
               </p>
             </div>
             <p className="text-xs text-gray-500 dark:text-gray-400">
