@@ -17,7 +17,7 @@ interface ResponsiveHeaderProps {
 }
 
 export default function ResponsiveHeader({
-  title = "IDR Currency Detector",
+  title = "Money Talks",
   subtitle = "AI-Powered Indonesian Rupiah Recognition with Voice Control",
   mobileSubtitle = "AI-Powered IDR Recognition",
   icon = "💰",
