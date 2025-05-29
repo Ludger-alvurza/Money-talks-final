@@ -276,22 +276,22 @@ const CurrencyDetector: React.FC = () => {
   );
 
   // Start/Stop Voice Recognition
-  const toggleVoiceRecognition = useCallback(() => {
-    if (!voiceSupported || !voiceRecognition) return;
+  // const toggleVoiceRecognition = useCallback(() => {
+  //   if (!voiceSupported || !voiceRecognition) return;
 
-    if (isListening) {
-      voiceRecognition.stop();
-      speakFeedback("Pengenalan suara dihentikan");
-    } else {
-      try {
-        voiceRecognition.start();
-        speakFeedback("Pengenalan suara dimulai");
-      } catch (error) {
-        console.log("Failed to start voice recognition:", error);
-        speakFeedback("Gagal memulai pengenalan suara");
-      }
-    }
-  }, [voiceSupported, voiceRecognition, isListening, speakFeedback]);
+  //   if (isListening) {
+  //     voiceRecognition.stop();
+  //     speakFeedback("Pengenalan suara dihentikan");
+  //   } else {
+  //     try {
+  //       voiceRecognition.start();
+  //       speakFeedback("Pengenalan suara dimulai");
+  //     } catch (error) {
+  //       console.log("Failed to start voice recognition:", error);
+  //       speakFeedback("Gagal memulai pengenalan suara");
+  //     }
+  //   }
+  // }, [voiceSupported, voiceRecognition, isListening, speakFeedback]);
 
   const toggleAudio = () => {
     setAudioEnabled(!audioEnabled);
