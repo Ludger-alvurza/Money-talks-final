@@ -4,13 +4,13 @@
   "description": "Aplikasi untuk mendeteksi jenis uang berdasarkan gambar.",
   "icons": [
     {
-      "src": "/icon-192x192.png",
+      "src": "/image/icon-192x192.png",
       "type": "image/png",
       "sizes": "192x192",
       "purpose": "any maskable"
     },
     {
-      "src": "/icon-512x512.png",
+      "src": "/image/icon-192x192.png",
       "type": "image/png",
       "sizes": "512x512",
       "purpose": "any maskable"
