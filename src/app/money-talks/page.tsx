@@ -8,7 +8,8 @@ import CameraComponent, {
   CameraComponentRef,
 } from "@/components/currency/CameraComponent";
 import ResultsComponent from "@/components/currency/ResultsComponent";
-import { ModeToggle } from "@/components/theme/toggle-mode";
+import CurrencyList from "@/components/currency/CurencyComponent";
+import ResponsiveHeader from "@/components/currency/Header";
 
 const CurrencyDetector: React.FC = () => {
   const [isModelLoaded, setIsModelLoaded] = useState<boolean>(false);
@@ -17,6 +18,7 @@ const CurrencyDetector: React.FC = () => {
   const [errorMessage, setErrorMessage] = useState<string>("");
   const [cameraActive, setCameraActive] = useState<boolean>(false);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const [refreshTrigger, setRefreshTrigger] = useState(0);
   const [modelHandler, setModelHandler] = useState<{
     init: () => Promise<boolean>;
     predict: (
@@ -557,78 +559,7 @@ const CurrencyDetector: React.FC = () => {
       </div>
 
       {/* Header Section */}
-      <div className="relative bg-white/90 dark:bg-gray-900/90 backdrop-blur-md border-b border-gray-200/50 dark:border-gray-700/50 shadow-lg sticky top-0 z-50">
-        <div className="absolute inset-0 bg-gradient-to-r from-blue-600/5 to-purple-600/5 dark:from-blue-400/5 dark:to-purple-400/5"></div>
-        <div className="relative container mx-auto px-4 py-6">
-          <div className="flex justify-between items-center">
-            <div className="flex items-center space-x-4">
-              <div className="relative group">
-                <div className="absolute -inset-1 bg-gradient-to-r from-blue-600 to-purple-600 rounded-xl blur opacity-75 group-hover:opacity-100 transition duration-300"></div>
-                <div className="relative bg-gradient-to-r from-blue-600 to-purple-600 p-3 rounded-xl shadow-lg transform group-hover:scale-105 transition-transform duration-300">
-                  <span className="text-2xl filter drop-shadow-sm">💰</span>
-                </div>
-              </div>
-              <div>
-                <h1 className="text-3xl font-bold bg-gradient-to-r from-blue-600 via-purple-600 to-indigo-600 dark:from-blue-400 dark:via-purple-400 dark:to-indigo-400 bg-clip-text text-transparent">
-                  IDR Currency Detector
-                </h1>
-                <p className="text-gray-600 dark:text-gray-300 text-sm mt-1 font-medium">
-                  AI-Powered Indonesian Rupiah Recognition with Voice Control
-                </p>
-              </div>
-            </div>
-
-            <div className="flex items-center space-x-4">
-              <ModeToggle />
-
-              {/* Voice Recognition Toggle */}
-              {voiceSupported && (
-                <button
-                  onClick={toggleVoiceRecognition}
-                  className={`group relative px-4 py-3 rounded-xl font-semibold transition-all duration-300 transform hover:scale-105 shadow-xl overflow-hidden ${
-                    isListening
-                      ? "bg-gradient-to-r from-red-500 to-pink-500 hover:from-red-600 hover:to-pink-600 text-white shadow-red-200 dark:shadow-red-900/50"
-                      : "bg-gradient-to-r from-blue-500 to-indigo-500 hover:from-blue-600 hover:to-indigo-600 text-white shadow-blue-200 dark:shadow-blue-900/50"
-                  }`}
-                  title={
-                    isListening
-                      ? "Voice Recognition: ON (Click to disable)"
-                      : "Voice Recognition: OFF (Click to enable)"
-                  }
-                >
-                  <div className="absolute inset-0 bg-white/20 transform scale-x-0 group-hover:scale-x-100 transition-transform duration-300 origin-left"></div>
-                  <div className="relative flex items-center space-x-2">
-                    <span className="text-lg">{isListening ? "🎤" : "🎙️"}</span>
-                    <span className="hidden sm:inline">
-                      {isListening ? "LISTENING" : "VOICE"}
-                    </span>
-                  </div>
-                </button>
-              )}
-
-              <button
-                onClick={toggleAudio}
-                className={`group relative px-3 py-3 rounded-xl font-semibold transition-all duration-300 transform hover:scale-105 shadow-xl overflow-hidden ${
-                  audioEnabled
-                    ? "bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600 text-white shadow-green-200 dark:shadow-green-900/50"
-                    : "bg-gradient-to-r from-gray-500 to-slate-500 hover:from-gray-600 hover:to-slate-600 text-white shadow-gray-200 dark:shadow-gray-900/50"
-                }`}
-                title={
-                  audioEnabled
-                    ? "Audio: ON (Click to disable)"
-                    : "Audio: OFF (Click to enable)"
-                }
-              >
-                <div className="absolute inset-0 bg-white/20 transform scale-x-0 group-hover:scale-x-100 transition-transform duration-300 origin-left"></div>
-                <div className="relative flex items-center space-x-2">
-                  <span className="text-lg">🔊</span>
-                  <span>{audioEnabled ? "ON" : "OFF"}</span>
-                </div>
-              </button>
-            </div>
-          </div>
-        </div>
-      </div>
+      <ResponsiveHeader />
 
       {/* Main Content */}
       <div className="relative container mx-auto px-4 py-8 space-y-8">
@@ -808,35 +739,145 @@ const CurrencyDetector: React.FC = () => {
             </div>
 
             {/* Supported Currency */}
-            <div className="group relative bg-gradient-to-br from-green-500/10 to-emerald-500/10 dark:from-green-400/10 dark:to-emerald-400/10 backdrop-blur-sm border border-green-200/50 dark:border-green-700/50 rounded-2xl p-6 shadow-lg hover:shadow-xl transition-all duration-300">
-              <div className="flex items-start space-x-3">
-                <div className="bg-green-100 dark:bg-green-900/50 p-3 rounded-full flex-shrink-0 shadow-inner">
-                  <span className="text-lg">💵</span>
-                </div>
-                <div>
-                  <h3 className="font-semibold text-green-800 dark:text-green-300 mb-3 text-lg">
+            <div className="group relative bg-gradient-to-br from-green-500/10 to-emerald-500/10 dark:from-green-400/10 dark:to-emerald-400/10 backdrop-blur-sm border border-green-200/50 dark:border-green-700/50 rounded-2xl p-4 sm:p-6 shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-[1.02] hover:border-green-300/70 dark:hover:border-green-600/70">
+              {/* Mobile Layout */}
+              <div className="block sm:hidden">
+                <div className="text-center mb-4">
+                  <div className="bg-gradient-to-br from-green-100 to-green-50 dark:from-green-900/50 dark:to-green-800/30 p-3 rounded-xl inline-block shadow-inner group-hover:shadow-md transition-shadow duration-300 mb-3">
+                    <span className="text-xl filter drop-shadow-sm">💵</span>
+                  </div>
+                  <h3 className="font-bold text-green-800 dark:text-green-300 text-lg tracking-tight">
                     Supported Denominations
                   </h3>
-                  <div className="grid grid-cols-2 gap-3 text-sm text-green-700 dark:text-green-300">
-                    {[
-                      "Rp 1.000",
-                      "Rp 2.000",
-                      "Rp 5.000",
-                      "Rp 10.000",
-                      "Rp 20.000",
-                      "Rp 50.000",
-                      "Rp 100.000",
-                    ].map((denom, idx) => (
-                      <div
-                        key={idx}
-                        className="flex items-center space-x-2 bg-green-50 dark:bg-green-900/30 rounded-lg p-2 hover:bg-green-100 dark:hover:bg-green-900/50 transition-colors duration-200"
+                </div>
+
+                {/* Mobile Action Buttons */}
+                <div className="space-y-3 mb-4">
+                  <button
+                    onClick={() => setRefreshTrigger((prev) => prev + 1)}
+                    className="w-full inline-flex items-center justify-center px-4 py-2.5 bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white text-sm font-medium rounded-lg shadow-md hover:shadow-lg transition-all duration-200 transform hover:scale-[1.02] active:scale-95 focus:outline-none focus:ring-2 focus:ring-blue-500/50"
+                  >
+                    <svg
+                      className="w-4 h-4 mr-2"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
+                      />
+                    </svg>
+                    Refresh Currencies
+                  </button>
+
+                  <a
+                    href="/currency"
+                    className="w-full inline-flex items-center justify-center px-4 py-2.5 bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white text-sm font-medium rounded-lg shadow-md hover:shadow-lg transition-all duration-200 transform hover:scale-[1.02] active:scale-95 focus:outline-none focus:ring-2 focus:ring-green-500/50"
+                  >
+                    <svg
+                      className="w-4 h-4 mr-2"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M12 6v6m0 0v6m0-6h6m-6 0H6"
+                      />
+                    </svg>
+                    Add Money
+                  </a>
+                </div>
+
+                {/* Mobile Currency List */}
+                <div className="bg-white/50 dark:bg-gray-800/50 rounded-lg p-3 border border-green-100/50 dark:border-green-800/50">
+                  <CurrencyList refreshTrigger={refreshTrigger} />
+                </div>
+              </div>
+
+              {/* Desktop/Tablet Layout */}
+              <div className="hidden sm:flex items-start space-x-4">
+                {/* Icon Container */}
+                <div className="bg-gradient-to-br from-green-100 to-green-50 dark:from-green-900/50 dark:to-green-800/30 p-4 rounded-xl flex-shrink-0 shadow-inner group-hover:shadow-md transition-shadow duration-300">
+                  <span className="text-2xl filter drop-shadow-sm">💵</span>
+                </div>
+
+                {/* Content Container */}
+                <div className="flex-1 min-w-0">
+                  <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-4 gap-2">
+                    <h3 className="font-bold text-green-800 dark:text-green-300 text-lg sm:text-xl tracking-tight">
+                      Supported Denominations
+                    </h3>
+                    <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse hidden sm:block"></div>
+                  </div>
+
+                  {/* Action Section */}
+                  <div className="space-y-4">
+                    <div className="flex flex-col sm:flex-row gap-3">
+                      <button
+                        onClick={() => setRefreshTrigger((prev) => prev + 1)}
+                        className="inline-flex items-center justify-center px-4 sm:px-6 py-2.5 sm:py-3 bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white text-sm sm:text-base font-medium rounded-lg sm:rounded-xl shadow-md hover:shadow-lg transition-all duration-200 transform hover:scale-105 active:scale-95 focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:ring-offset-2 dark:focus:ring-offset-gray-800"
                       >
-                        <span className="w-2 h-2 bg-green-500 rounded-full"></span>
-                        <span className="font-medium">{denom}</span>
-                      </div>
-                    ))}
+                        <svg
+                          className="w-4 h-4 mr-2 transition-transform group-hover:rotate-180"
+                          fill="none"
+                          stroke="currentColor"
+                          viewBox="0 0 24 24"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={2}
+                            d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
+                          />
+                        </svg>
+                        <span className="hidden sm:inline">
+                          Refresh Currencies
+                        </span>
+                        <span className="sm:hidden">Refresh</span>
+                      </button>
+
+                      <a
+                        href="/currency"
+                        className="inline-flex items-center justify-center px-4 sm:px-6 py-2.5 sm:py-3 bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white text-sm sm:text-base font-medium rounded-lg sm:rounded-xl shadow-md hover:shadow-lg transition-all duration-200 transform hover:scale-105 active:scale-95 focus:outline-none focus:ring-2 focus:ring-green-500/50 focus:ring-offset-2 dark:focus:ring-offset-gray-800"
+                      >
+                        <svg
+                          className="w-4 h-4 mr-2"
+                          fill="none"
+                          stroke="currentColor"
+                          viewBox="0 0 24 24"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={2}
+                            d="M12 6v6m0 0v6m0-6h6m-6 0H6"
+                          />
+                        </svg>
+                        <span className="hidden sm:inline">Add Money</span>
+                        <span className="sm:hidden">Add</span>
+                      </a>
+                    </div>
+
+                    {/* Currency List Container */}
+                    <div className="bg-white/50 dark:bg-gray-800/50 rounded-xl p-3 sm:p-4 border border-green-100/50 dark:border-green-800/50">
+                      <CurrencyList refreshTrigger={refreshTrigger} />
+                    </div>
                   </div>
                 </div>
+              </div>
+
+              {/* Decorative Elements */}
+              <div className="absolute top-4 right-4 opacity-20 group-hover:opacity-30 transition-opacity duration-300">
+                <div className="w-8 h-8 border-2 border-green-400 rounded-full"></div>
+              </div>
+              <div className="absolute bottom-4 left-4 opacity-10 group-hover:opacity-20 transition-opacity duration-300">
+                <div className="w-6 h-6 bg-green-400 rounded-full blur-sm"></div>
               </div>
             </div>
           </div>
