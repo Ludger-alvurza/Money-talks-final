@@ -2,7 +2,6 @@
 import { useState } from "react";
 import CurrencyForm from "@/components/currency/CurrencyForm";
 import CurrencyList from "@/components/currency/CurrencyList";
-import { ModeToggle } from "@/components/theme/toggle-mode";
 import ResponsiveHeader from "@/components/currency/Header";
 
 type Currency = {
