@@ -26,6 +26,51 @@ const navigationItems = [
   { href: "/about", label: "About", icon: "ℹ️" },
 ];
 
+// Animated Hamburger Menu Component
+interface AnimatedHamburgerProps {
+  isOpen: boolean;
+  onClick: () => void;
+}
+
+const AnimatedHamburger: React.FC<AnimatedHamburgerProps> = ({
+  isOpen,
+  onClick,
+}) => {
+  return (
+    <button
+      onClick={onClick}
+      className="md:hidden relative p-2 rounded-lg bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors duration-300 group"
+      aria-label="Toggle navigation menu"
+    >
+      <div className="w-6 h-6 flex flex-col justify-center items-center relative">
+        {/* Top line */}
+        <span
+          className={`block h-0.5 w-6 bg-gray-700 dark:bg-gray-300 transition-all duration-300 ease-in-out transform origin-center ${
+            isOpen ? "rotate-45 translate-y-0" : "rotate-0 -translate-y-1.5"
+          }`}
+        />
+
+        {/* Middle line */}
+        <span
+          className={`block h-0.5 w-6 bg-gray-700 dark:bg-gray-300 transition-all duration-300 ease-in-out ${
+            isOpen ? "opacity-0 scale-0" : "opacity-100 scale-100"
+          }`}
+        />
+
+        {/* Bottom line */}
+        <span
+          className={`block h-0.5 w-6 bg-gray-700 dark:bg-gray-300 transition-all duration-300 ease-in-out transform origin-center ${
+            isOpen ? "-rotate-45 translate-y-0" : "rotate-0 translate-y-1.5"
+          }`}
+        />
+      </div>
+
+      {/* Hover effect overlay */}
+      <div className="absolute inset-0 rounded-lg bg-gradient-to-r from-blue-500/0 to-purple-500/0 group-hover:from-blue-500/10 group-hover:to-purple-500/10 transition-all duration-300" />
+    </button>
+  );
+};
+
 export default function ResponsiveHeader({
   title = "Money Talks",
   subtitle = "AI-Powered Indonesian Rupiah Recognition with Voice Control",
@@ -101,17 +146,12 @@ export default function ResponsiveHeader({
 
             {/* Right section - Controls */}
             <div className="flex items-center space-x-2 sm:space-x-3 lg:space-x-4">
-              {/* Mobile Menu Toggle */}
+              {/* Animated Mobile Menu Toggle */}
               {showNavigation && (
-                <button
+                <AnimatedHamburger
+                  isOpen={isMobileMenuOpen}
                   onClick={toggleMobileMenu}
-                  className="md:hidden p-2 rounded-lg bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
-                  aria-label="Toggle navigation menu"
-                >
-                  <span className="text-lg">
-                    {isMobileMenuOpen ? "✕" : "☰"}
-                  </span>
-                </button>
+                />
               )}
 
               {showModeToggle && <ModeToggle />}
@@ -196,20 +236,32 @@ export default function ResponsiveHeader({
                 ))}
               </nav>
 
-              {/* Mobile Navigation */}
-              {isMobileMenuOpen && (
-                <nav className="md:hidden bg-white/95 dark:bg-gray-900/95 backdrop-blur-md border-t border-gray-200/50 dark:border-gray-700/50 rounded-b-xl">
+              {/* Mobile Navigation with smooth slide animation */}
+              <div
+                className={`md:hidden overflow-hidden transition-all duration-300 ease-in-out ${
+                  isMobileMenuOpen
+                    ? "max-h-96 opacity-100"
+                    : "max-h-0 opacity-0"
+                }`}
+              >
+                <nav className="bg-white/95 dark:bg-gray-900/95 backdrop-blur-md border-t border-gray-200/50 dark:border-gray-700/50 rounded-b-xl">
                   <div className="px-4 py-3 space-y-2">
-                    {navigationItems.map((item) => (
+                    {navigationItems.map((item, index) => (
                       <Link
                         key={item.href}
                         href={item.href}
                         onClick={() => setIsMobileMenuOpen(false)}
-                        className={`block px-4 py-3 rounded-lg text-sm font-medium transition-all duration-300 ${
+                        className={`block px-4 py-3 rounded-lg text-sm font-medium transition-all duration-300 transform hover:scale-[1.02] ${
                           isActivePage(item.href)
                             ? "bg-gradient-to-r from-blue-500 to-purple-500 text-white shadow-md"
                             : "text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 hover:text-blue-600 dark:hover:text-blue-400"
                         }`}
+                        style={{
+                          animationDelay: `${index * 50}ms`,
+                          animation: isMobileMenuOpen
+                            ? `slideInUp 0.3s ease-out ${index * 50}ms both`
+                            : "none",
+                        }}
                       >
                         <div className="flex items-center space-x-3">
                           <span className="text-lg">{item.icon}</span>
@@ -219,11 +271,25 @@ export default function ResponsiveHeader({
                     ))}
                   </div>
                 </nav>
-              )}
+              </div>
             </>
           )}
         </div>
       </div>
+
+      {/* CSS Keyframes for menu item animation */}
+      <style jsx>{`
+        @keyframes slideInUp {
+          from {
+            opacity: 0;
+            transform: translateY(10px);
+          }
+          to {
+            opacity: 1;
+            transform: translateY(0);
+          }
+        }
+      `}</style>
     </div>
   );
 }
