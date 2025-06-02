@@ -1,7 +1,8 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { ModeToggle } from "../theme/toggle-mode";
+import Image from "next/image";
 
 // Props interface for TypeScript support
 interface ResponsiveHeaderProps {
@@ -75,7 +76,6 @@ export default function ResponsiveHeader({
   title = "Money Talks",
   subtitle = "AI-Powered Indonesian Rupiah Recognition with Voice Control",
   mobileSubtitle = "AI-Powered IDR Recognition",
-  icon = "💰",
   onVoiceToggle,
   onAudioToggle,
   voiceSupported = true,
@@ -88,7 +88,13 @@ export default function ResponsiveHeader({
   const [isListening, setIsListening] = useState(initialListening);
   const [audioEnabled, setAudioEnabled] = useState(initialAudioEnabled);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [isMounted, setIsMounted] = useState(false);
   const pathname = usePathname();
+
+  // Fix hydration issue by ensuring component is mounted before using pathname
+  useEffect(() => {
+    setIsMounted(true);
+  }, []);
 
   const toggleVoiceRecognition = () => {
     const newListeningState = !isListening;
@@ -107,6 +113,7 @@ export default function ResponsiveHeader({
   };
 
   const isActivePage = (href: string) => {
+    if (!isMounted) return false;
     return pathname === href;
   };
 
@@ -124,9 +131,18 @@ export default function ResponsiveHeader({
               <div className="relative group flex-shrink-0">
                 <div className="absolute -inset-1 bg-gradient-to-r from-blue-600 to-purple-600 rounded-xl blur opacity-75 group-hover:opacity-100 transition duration-300"></div>
                 <div className="relative bg-gradient-to-r from-blue-600 to-purple-600 p-2 sm:p-3 rounded-xl shadow-lg transform group-hover:scale-105 transition-transform duration-300">
-                  <span className="text-xl sm:text-2xl filter drop-shadow-sm">
-                    {icon}
-                  </span>
+                  {isMounted ? (
+                    <Image
+                      src="/image/icon-192x192.jpg"
+                      alt="Money Talks Icon"
+                      width={32}
+                      height={32}
+                      className="w-8 h-8 sm:w-10 sm:h-10 object-cover rounded-lg"
+                      priority
+                    />
+                  ) : (
+                    <div className="w-8 h-8 sm:w-10 sm:h-10 bg-gray-300 dark:bg-gray-600 rounded-lg animate-pulse" />
+                  )}
                 </div>
               </div>
 
@@ -213,7 +229,7 @@ export default function ResponsiveHeader({
           </div>
 
           {/* Navigation Menu */}
-          {showNavigation && (
+          {showNavigation && isMounted && (
             <>
               {/* Desktop Navigation */}
               <nav className="hidden md:flex items-center justify-center space-x-1 lg:space-x-2">
@@ -273,6 +289,23 @@ export default function ResponsiveHeader({
                 </nav>
               </div>
             </>
+          )}
+
+          {/* Skeleton Navigation for SSR */}
+          {showNavigation && !isMounted && (
+            <div className="hidden md:flex items-center justify-center space-x-1 lg:space-x-2">
+              {navigationItems.map((item) => (
+                <div
+                  key={item.href}
+                  className="relative px-4 lg:px-6 py-2 lg:py-3 rounded-lg lg:rounded-xl text-sm lg:text-base font-medium text-gray-700 dark:text-gray-300"
+                >
+                  <div className="flex items-center space-x-2">
+                    <span className="text-base lg:text-lg">{item.icon}</span>
+                    <span>{item.label}</span>
+                  </div>
+                </div>
+              ))}
+            </div>
           )}
         </div>
       </div>
