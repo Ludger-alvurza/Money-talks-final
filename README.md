@@ -46,29 +46,68 @@ Proyek ini dirancang khusus untuk menjadi solusi yang mudah diakses dan digunaka
 
 ## 🚀 Cara Menggunakan
 
-### 🎮 Langkah-langkah Sederhana
+### 🎮 Alur Penggunaan
 
-```mermaid
-graph LR
-    A[🌐 Buka Aplikasi] --> B[📸 Buka Kamera]
-    B --> C[🗣️ Ucapkan 'Foto']
-    C --> D[🔊 Dengar Hasil]
-    D --> E[🔄 Ulangi atau Tutup]
-```
+<div align="center">
+
+**🌐 Buka App** → **🏠 Halaman Utama** → **🗣️ "Buka Halaman Deteksi Uang"** → **📱 Halaman Deteksi** → **🗣️ "Buka Kamera"** → **📸 Kamera Aktif** → **🗣️ "Mulai Deteksi Uang"** → **💵 Arahkan Uang** → **⏳ Proses** → **🔊 Hasil Suara** → **🗣️ "Tutup Kamera"** → **✅ Selesai**
+
+</div>
 
 <details>
-<summary><strong>📋 Panduan Detail</strong></summary>
+<summary><strong>📋 Panduan Detail Step-by-Step</strong></summary>
 
-### 1️⃣ Membuka Halaman Deteksi Uang
+<br>
 
-Setelah membuka aplikasi, Anda bisa langsung mengakses halaman deteksi dengan menekan tombol atau menggunakan perintah suara.
+### 1️⃣ **Membuka Aplikasi**
 
-### 2️⃣ Memulai dan Menghentikan Deteksi
+```
+🌐 Buka aplikasi MoneyTalks atau kunjungi website MoneyTalks
+🏠 Anda akan masuk ke halaman selamat datang
+```
 
-- **🎥 Mengaktifkan kamera:** Ucapkan: _**"Buka Kamera"**_
-- **📸 Mengambil gambar:** Ucapkan: _**"Foto"**_ untuk mendeteksi nominal uang. Sistem akan memberikan umpan balik suara dengan nominal uang yang dikenali.
-  > ⚠️ **Note:** Jika gambar yang diambil bukan uang, sistem tetap memberikan deteksi gambar tetapi tanpa umpan balik suara.
-- **❌ Menutup kamera:** Ucapkan: _**"Tutup Kamera"**_ untuk menghentikan proses deteksi.
+### 2️⃣ **Navigasi ke Halaman Deteksi**
+
+```
+🗣️ Di halaman selamat datang, ucapkan: "Buka Halaman Deteksi Uang"
+📱 Sistem akan mengarahkan Anda ke halaman deteksi
+```
+
+### 3️⃣ **Mengaktifkan Kamera**
+
+```
+🗣️ Di halaman deteksi uang, ucapkan: "Buka Kamera"
+📸 Kamera akan aktif dan siap digunakan
+```
+
+### 4️⃣ **Memulai Proses Deteksi**
+
+```
+🗣️ Ucapkan: "Mulai Deteksi Uang"
+💵 Arahkan uang kertas pada kamera dengan posisi yang benar
+✨ Pastikan uang terlihat jelas dan pencahayaan cukup
+```
+
+### 5️⃣ **Menunggu Hasil**
+
+```
+⏳ Tunggu hingga sistem selesai memproses gambar
+🔊 Dengarkan output suara yang akan menyebutkan nominal uang
+```
+
+### 6️⃣ **Menutup Aplikasi**
+
+```
+🗣️ Setelah selesai, ucapkan: "Tutup Kamera"
+❌ Kamera akan tertutup dan proses deteksi berhenti
+```
+
+> 💡 **Tips Penggunaan Optimal:**
+>
+> - Pastikan uang kertas dalam kondisi baik dan tidak terlipat
+> - Gunakan pencahayaan yang cukup untuk hasil deteksi terbaik
+> - Posisikan uang tegak lurus dengan kamera
+> - Tunggu sebentar setelah memberikan perintah suara
 
 </details>
 
