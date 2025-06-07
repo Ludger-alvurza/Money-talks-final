@@ -108,6 +108,7 @@ Data Kementerian Kesehatan RI mencatat sekitar 1,5 persen penduduk Indonesia mer
 ### Dataset
 
 Kami menggabungkan beberapa dataset uang rupiah dari Kaggle dan menghasilkan dataset sebagai berikut.
+
 [Dataset MoneyTalks](https://drive.google.com/file/d/1pfp23p8zYdz1zAOaEw4fEYiHFXm4ixvJ/view?usp=sharing)
 
 ### Membangun Model
