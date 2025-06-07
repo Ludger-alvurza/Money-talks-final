@@ -36,7 +36,8 @@ Hai semuanya, kami dari CC25-CF104 dengan bangga mempersembahkan, MoneyTalks! In
       <td>MC312D5X0660</td>
       <td>Cloudya Filia Putri</td>
       <td>Machine Learning Engineer</td>
-      <td>
+    <td>
+        <a href="https://github.com/cloudyafilia"><img src="https://img.shields.io/badge/github-121013?style=for-the-badge&logo=github&logoColor=white"></a>
         <a href="https://www.linkedin.com/in/cloudyafilia/"><img src="https://img.shields.io/badge/linkedin-%230077B5.svg?style=for-the-badge&logo=linkedin&logoColor=white"></a>
       </td>
     </tr>
@@ -45,6 +46,7 @@ Hai semuanya, kami dari CC25-CF104 dengan bangga mempersembahkan, MoneyTalks! In
       <td>Devi Endang Pratiwi</td>
       <td>Machine Learning Engineer</td>
     <td>
+        <a href="https://github.com/deviendangpratiwi"><img src="https://img.shields.io/badge/github-121013?style=for-the-badge&logo=github&logoColor=white"></a>
         <a href="https://www.linkedin.com/in/deviendangpratiwi/"><img src="https://img.shields.io/badge/linkedin-%230077B5.svg?style=for-the-badge&logo=linkedin&logoColor=white"></a>
       </td>
     </tr>
@@ -53,6 +55,7 @@ Hai semuanya, kami dari CC25-CF104 dengan bangga mempersembahkan, MoneyTalks! In
       <td>Pragipta Septyaningrum Larasati</td>
       <td>Machine Learning Engineer</td>
     <td>
+        <a href="https://github.com/pragiptalrs"><img src="https://img.shields.io/badge/github-121013?style=for-the-badge&logo=github&logoColor=white"></a>
         <a href="https://www.linkedin.com/in/pragiptaseptyaningrumlarasati/"><img src="https://img.shields.io/badge/linkedin-%230077B5.svg?style=for-the-badge&logo=linkedin&logoColor=white"></a>
       </td>
     </tr>
@@ -60,7 +63,8 @@ Hai semuanya, kami dari CC25-CF104 dengan bangga mempersembahkan, MoneyTalks! In
       <td>FC240D5Y1027</td>
       <td>Ludgerdus Pati Hurit</td>
       <td>Front End and Back End Developer</td>
- <td>
+    <td>
+        <a href="https://github.com/Ludger-alvurza"><img src="https://img.shields.io/badge/github-121013?style=for-the-badge&logo=github&logoColor=white"></a>
         <a href="https://www.linkedin.com/in/ludgerdus-pati-hurit-331181266/"><img src="https://img.shields.io/badge/linkedin-%230077B5.svg?style=for-the-badge&logo=linkedin&logoColor=white"></a>
       </td>
     </tr>
@@ -69,6 +73,7 @@ Hai semuanya, kami dari CC25-CF104 dengan bangga mempersembahkan, MoneyTalks! In
       <td>Rekarius</td>
       <td>Front End and Back End Developer</td>
    <td>
+        <a href="https://github.com/rekarius"><img src="https://img.shields.io/badge/github-121013?style=for-the-badge&logo=github&logoColor=white"></a>
         <a href="https://www.linkedin.com/in/rekarius/"><img src="https://img.shields.io/badge/linkedin-%230077B5.svg?style=for-the-badge&logo=linkedin&logoColor=white"></a>
       </td>
     </tr>
@@ -76,7 +81,8 @@ Hai semuanya, kami dari CC25-CF104 dengan bangga mempersembahkan, MoneyTalks! In
       <td>FC240D5Y0975</td>
       <td>Victor Crisman Mendrofa</td>
       <td>Front End and Back End Developer</td>
- <td>
+   <td>
+        <a href="https://github.com/victor-CN-26"><img src="https://img.shields.io/badge/github-121013?style=for-the-badge&logo=github&logoColor=white"></a>
         <a href="https://www.linkedin.com/in/victor-crisman-mendrofa-1b2bba275/"><img src="https://img.shields.io/badge/linkedin-%230077B5.svg?style=for-the-badge&logo=linkedin&logoColor=white"></a>
       </td>
     </tr>
