@@ -15,7 +15,7 @@ Hai semuanya, kami dari CC25-CF104 dengan bangga mempersembahkan, MoneyTalks! In
     - [Dataset](#dataset)
     - [Membangun Model](#membangun-model)
     - [Instalasi Proyek](#instalasi-proyek)
-  - [Fitur](#fitur)
+  - [Fitur Utama](#fitur-utama)
   - [Screenshot](#screenshot)
 - [Alur Kerja MoneyTalks](#alur-kerja-moneytalks)
 - [Video Demo](#video-demo)
@@ -147,10 +147,16 @@ npm install
 # 4. Jalankan aplikasi
 npm run dev
 ```
+## Fitur Utama
+<div>
+
+|              🎯 **Deteksi Real-time**               |               🎤 **Voice Command**                |          🔊 **Audio Feedback**          |               📱 **Mobile Ready**               |
+| :-------------------------------------------------: | :-----------------------------------------------: | :-------------------------------------: | :---------------------------------------------: |
+| Deteksi nominal uang melalui kamera secara langsung | Navigasi dan interaksi menggunakan perintah suara | Umpan balik suara melalui teknologi TTS | Antarmuka ramah disabilitas di perangkat mobile |
 
 ## Screenshots
 
-![1](link github)
+![HalamanMoneyTalks]([link github](https://raw.githubusercontent.com/Pragiptalrs/Capstone-MoneyTalks/main/HalamanMoneyTalks.png))
 
 ## Alur Kerja MoneyTalks
 
