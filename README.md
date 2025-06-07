@@ -3,7 +3,8 @@
 ![Logo MoneyTalks](https://raw.githubusercontent.com/Pragiptalrs/Capstone-MoneyTalks/main/logomoneytalks.png)
 ![Versi MoneyTalks](https://raw.githubusercontent.com/Pragiptalrs/Capstone-MoneyTalks/main/versimoneytalks.png)
 
-Hai semuanya, kami dari CC25-CF104 dengan bangga mempersembahkan, MoneyTalks! Inovasi kami untuk membantu tunanetra dalam mengenali uang rupiah.
+Hai semuanya, kami dari CC25-CF104 dengan bangga mempersembahkan, MoneyTalks! 
+Inovasi kami untuk membantu tunanetra dalam mengenali uang rupiah.
 
 ## Daftar Isi
 
@@ -109,7 +110,7 @@ Data Kementerian Kesehatan RI mencatat sekitar 1,5 persen penduduk Indonesia mer
 
 Kami menggabungkan beberapa dataset uang rupiah dari Kaggle dan menghasilkan dataset sebagai berikut.
 
-[Dataset MoneyTalks](https://drive.google.com/file/d/1pfp23p8zYdz1zAOaEw4fEYiHFXm4ixvJ/view?usp=sharing)
+- [Dataset MoneyTalks](https://drive.google.com/file/d/1pfp23p8zYdz1zAOaEw4fEYiHFXm4ixvJ/view?usp=sharing)
 
 ### Membangun Model
 
