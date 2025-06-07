@@ -1,4 +1,4 @@
-# MoneyTalks : Platform Berbasis Web dan Mobile untuk Klasifikasi Uang Rupiah Bagi Tunanetra\*\***
+# MoneyTalks : Platform Berbasis Web dan Mobile untuk Klasifikasi Uang Rupiah Bagi Tunanetra
 
 ![Logo MoneyTalks](https://raw.githubusercontent.com/Pragiptalrs/Capstone-MoneyTalks/main/logomoneytalks.png)
 ![Versi MoneyTalks](https://raw.githubusercontent.com/Pragiptalrs/Capstone-MoneyTalks/main/versimoneytalks.png)
