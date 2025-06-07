@@ -150,7 +150,7 @@ npm run dev
 ## Fitur Utama
 <div>
 
-|              🎯 **Deteksi Real-time**               |               🎤 **Voice Command**                |          🔊 **Audio Feedback**          |               📱 **Mobile Ready**               |
+|                **Deteksi Real-time**               |                 **Voice Command**                |            **Audio Feedback**          |                 **Mobile Ready**               |
 | :-------------------------------------------------: | :-----------------------------------------------: | :-------------------------------------: | :---------------------------------------------: |
 | Deteksi nominal uang melalui kamera secara langsung | Navigasi dan interaksi menggunakan perintah suara | Umpan balik suara melalui teknologi TTS | Antarmuka ramah disabilitas di perangkat mobile |
 
