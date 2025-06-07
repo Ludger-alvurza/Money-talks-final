@@ -156,7 +156,7 @@ npm run dev
 
 ## Screenshots
 
-![HalamanMoneyTalks]([link github](https://raw.githubusercontent.com/Pragiptalrs/Capstone-MoneyTalks/main/HalamanMoneyTalks.png))
+![HalamanMoneyTalks](https://raw.githubusercontent.com/Pragiptalrs/Capstone-MoneyTalks/main/HalamanMoneyTalks.png)
 
 ## Alur Kerja MoneyTalks
 
