@@ -114,7 +114,7 @@ Kami menggabungkan beberapa dataset uang rupiah dari Kaggle dan menghasilkan dat
 
 ### Membangun Model
 
-Kami membangun model menggunakan TensorFlow Sequential Model setelah melakukan tahapan pra-pemrosesan data pada dataset. Model yang telah dilatih kemudian disimpan langsung dalam format SavedModel, TensorFlow.js, dan TensorFlow Lite, sehingga dapat digunakan di berbagai platform seperti web dan perangkat mobile. Setelah itu, model ini dideploy menggunakan FAST API dan Docker.
+Kami membangun model menggunakan TensorFlow Sequential Model setelah melakukan tahapan pra-pemrosesan data pada dataset. Model yang telah dilatih kemudian disimpan langsung dalam format SavedModel, TensorFlow.js, dan TensorFlow Lite, sehingga dapat digunakan di berbagai platform seperti web dan perangkat mobile. Setelah itu, model ini dideploy menggunakan Vercel.
 Untuk melihat detail kode yang kami gunakan, silakan klik tautan berikut:
 
 - [Notebook MoneyTalks](https://colab.research.google.com/drive/114lNiIakORxkFqQPaWJayhMHSfSsAAwM#scrollTo=mMLZesHm5F2I)
