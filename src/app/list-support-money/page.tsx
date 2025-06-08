@@ -90,7 +90,7 @@ function CurrencyListViewOnly() {
               📊
             </span>
             <h2 className="text-lg sm:text-xl md:text-2xl font-bold text-gray-800 dark:text-gray-100">
-              Currency List
+              Nominal List
             </h2>
             <span className="bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 text-xs sm:text-sm font-semibold px-2 sm:px-3 py-1 rounded-full transform transition-all duration-500 hover:scale-105">
               {currencies.length} currencies
