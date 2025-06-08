@@ -124,7 +124,7 @@ export default function CurrencyForm({
           <h2 className="text-lg sm:text-xl lg:text-2xl font-bold text-gray-800 dark:text-gray-100 flex items-center gap-2">
             <span className="text-lg sm:text-xl lg:text-2xl">💰</span>
             <span className="hidden sm:inline">
-              {editingCurrency ? "Update Currency" : "Add New Currency"}
+              {editingCurrency ? "Update Currency" : "Add New Nominal"}
             </span>
             <span className="sm:hidden">
               {editingCurrency ? "Update" : "Add"} Currency

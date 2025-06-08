@@ -22,7 +22,7 @@ interface ResponsiveHeaderProps {
 
 const navigationItems = [
   { href: "/money-talks", label: "Home", icon: "🏠" },
-  { href: "/currency", label: "Currency", icon: "💱" },
+  { href: "/currency", label: "Manage Nominal", icon: "💱" },
   { href: "/list-support-money", label: "Support Money", icon: "📋" },
   { href: "/about", label: "About", icon: "ℹ️" },
 ];

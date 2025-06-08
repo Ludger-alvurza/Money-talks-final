@@ -129,7 +129,7 @@ export default function CurrencyList({
           <div className="flex items-center justify-between flex-wrap gap-3">
             <h2 className="text-lg sm:text-xl lg:text-2xl font-bold text-gray-800 dark:text-gray-100 flex items-center gap-2">
               <span className="text-lg sm:text-xl lg:text-2xl">📊</span>
-              <span className="hidden sm:inline">Currency List</span>
+              <span className="hidden sm:inline">Nominal List</span>
               <span className="sm:hidden">Currencies</span>
               <span className="bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 text-xs sm:text-sm font-semibold px-2 sm:px-3 py-1 rounded-full">
                 {currencies.length}

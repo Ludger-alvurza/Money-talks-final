@@ -208,7 +208,7 @@ export default function CurrencyPage() {
               <span className="text-2xl sm:text-3xl md:text-4xl">💰</span>
             </div>
             <h1 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl xl:text-6xl font-bold bg-gradient-to-r from-blue-600 via-purple-600 to-indigo-600 bg-clip-text text-transparent mb-4 sm:mb-6 px-2">
-              Currency Exchange
+              Supported Money List
             </h1>
             <p className="text-sm sm:text-base md:text-lg lg:text-xl text-gray-600 max-w-2xl lg:max-w-3xl mx-auto leading-relaxed px-4">
               Real-time exchange rates and currency information at your
@@ -259,11 +259,11 @@ export default function CurrencyPage() {
           </div>
 
           <h1 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl xl:text-6xl font-bold bg-gradient-to-r from-blue-600 via-purple-600 to-indigo-600 dark:from-blue-400 dark:via-purple-400 dark:to-indigo-400 bg-clip-text text-transparent mb-4 sm:mb-6 px-2 transition-all duration-700">
-            Currency Exchange
+            Supported Money List
           </h1>
 
           <p className="text-sm sm:text-base md:text-lg lg:text-xl text-gray-600 dark:text-gray-300 max-w-2xl lg:max-w-3xl mx-auto leading-relaxed px-4">
-            Real-time exchange rates and currency information at your fingertips
+            List of supported nominal money
           </p>
 
           <div className="flex items-center justify-center mt-6 sm:mt-8 space-x-2">
@@ -292,7 +292,7 @@ export default function CurrencyPage() {
             >
               <h2 className="text-lg sm:text-xl md:text-2xl font-semibold text-gray-800 dark:text-white flex items-center">
                 <span className="w-2.5 h-2.5 sm:w-3 sm:h-3 bg-green-500 rounded-full mr-2 sm:mr-3 animate-pulse"></span>
-                Live Exchange Rates
+                Live Supported Nominal
               </h2>
 
               <div className="text-xs sm:text-sm text-gray-500 dark:text-gray-400 flex items-center">
