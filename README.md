@@ -1,9 +1,10 @@
-# \***\*MoneyTalks : Platform Berbasis Web dan Mobile untuk Klasifikasi Uang Rupiah Bagi Tunanetra\*\***
+# MoneyTalks : Platform Berbasis Web dan Mobile untuk Klasifikasi Uang Rupiah Bagi Tunanetra
 
 ![Logo MoneyTalks](https://raw.githubusercontent.com/Pragiptalrs/Capstone-MoneyTalks/main/logomoneytalks.png)
 ![Versi MoneyTalks](https://raw.githubusercontent.com/Pragiptalrs/Capstone-MoneyTalks/main/versimoneytalks.png)
 
-Hai semuanya, kami dari CC25-CF104 dengan bangga mempersembahkan, MoneyTalks! Inovasi kami untuk membantu tunanetra dalam mengenali uang rupiah.
+Hai semuanya, kami dari CC25-CF104 dengan bangga mempersembahkan, MoneyTalks! 
+Inovasi kami untuk membantu tunanetra dalam mengenali uang rupiah.
 
 ## Daftar Isi
 
@@ -15,7 +16,7 @@ Hai semuanya, kami dari CC25-CF104 dengan bangga mempersembahkan, MoneyTalks! In
     - [Dataset](#dataset)
     - [Membangun Model](#membangun-model)
     - [Instalasi Proyek](#instalasi-proyek)
-  - [Fitur](#fitur)
+  - [Fitur Utama](#fitur-utama)
   - [Screenshot](#screenshot)
 - [Alur Kerja MoneyTalks](#alur-kerja-moneytalks)
 - [Video Demo](#video-demo)
@@ -36,7 +37,8 @@ Hai semuanya, kami dari CC25-CF104 dengan bangga mempersembahkan, MoneyTalks! In
       <td>MC312D5X0660</td>
       <td>Cloudya Filia Putri</td>
       <td>Machine Learning Engineer</td>
-      <td>
+    <td>
+        <a href="https://github.com/cloudyafilia"><img src="https://img.shields.io/badge/github-121013?style=for-the-badge&logo=github&logoColor=white"></a>
         <a href="https://www.linkedin.com/in/cloudyafilia/"><img src="https://img.shields.io/badge/linkedin-%230077B5.svg?style=for-the-badge&logo=linkedin&logoColor=white"></a>
       </td>
     </tr>
@@ -45,6 +47,7 @@ Hai semuanya, kami dari CC25-CF104 dengan bangga mempersembahkan, MoneyTalks! In
       <td>Devi Endang Pratiwi</td>
       <td>Machine Learning Engineer</td>
     <td>
+        <a href="https://github.com/deviendangpratiwi"><img src="https://img.shields.io/badge/github-121013?style=for-the-badge&logo=github&logoColor=white"></a>
         <a href="https://www.linkedin.com/in/deviendangpratiwi/"><img src="https://img.shields.io/badge/linkedin-%230077B5.svg?style=for-the-badge&logo=linkedin&logoColor=white"></a>
       </td>
     </tr>
@@ -53,6 +56,7 @@ Hai semuanya, kami dari CC25-CF104 dengan bangga mempersembahkan, MoneyTalks! In
       <td>Pragipta Septyaningrum Larasati</td>
       <td>Machine Learning Engineer</td>
     <td>
+        <a href="https://github.com/pragiptalrs"><img src="https://img.shields.io/badge/github-121013?style=for-the-badge&logo=github&logoColor=white"></a>
         <a href="https://www.linkedin.com/in/pragiptaseptyaningrumlarasati/"><img src="https://img.shields.io/badge/linkedin-%230077B5.svg?style=for-the-badge&logo=linkedin&logoColor=white"></a>
       </td>
     </tr>
@@ -60,7 +64,8 @@ Hai semuanya, kami dari CC25-CF104 dengan bangga mempersembahkan, MoneyTalks! In
       <td>FC240D5Y1027</td>
       <td>Ludgerdus Pati Hurit</td>
       <td>Front End and Back End Developer</td>
- <td>
+    <td>
+        <a href="https://github.com/Ludger-alvurza"><img src="https://img.shields.io/badge/github-121013?style=for-the-badge&logo=github&logoColor=white"></a>
         <a href="https://www.linkedin.com/in/ludgerdus-pati-hurit-331181266/"><img src="https://img.shields.io/badge/linkedin-%230077B5.svg?style=for-the-badge&logo=linkedin&logoColor=white"></a>
       </td>
     </tr>
@@ -69,6 +74,7 @@ Hai semuanya, kami dari CC25-CF104 dengan bangga mempersembahkan, MoneyTalks! In
       <td>Rekarius</td>
       <td>Front End and Back End Developer</td>
    <td>
+        <a href="https://github.com/rekarius"><img src="https://img.shields.io/badge/github-121013?style=for-the-badge&logo=github&logoColor=white"></a>
         <a href="https://www.linkedin.com/in/rekarius/"><img src="https://img.shields.io/badge/linkedin-%230077B5.svg?style=for-the-badge&logo=linkedin&logoColor=white"></a>
       </td>
     </tr>
@@ -76,7 +82,8 @@ Hai semuanya, kami dari CC25-CF104 dengan bangga mempersembahkan, MoneyTalks! In
       <td>FC240D5Y0975</td>
       <td>Victor Crisman Mendrofa</td>
       <td>Front End and Back End Developer</td>
- <td>
+   <td>
+        <a href="https://github.com/victor-CN-26"><img src="https://img.shields.io/badge/github-121013?style=for-the-badge&logo=github&logoColor=white"></a>
         <a href="https://www.linkedin.com/in/victor-crisman-mendrofa-1b2bba275/"><img src="https://img.shields.io/badge/linkedin-%230077B5.svg?style=for-the-badge&logo=linkedin&logoColor=white"></a>
       </td>
     </tr>
@@ -102,11 +109,12 @@ Data Kementerian Kesehatan RI mencatat sekitar 1,5 persen penduduk Indonesia mer
 ### Dataset
 
 Kami menggabungkan beberapa dataset uang rupiah dari Kaggle dan menghasilkan dataset sebagai berikut.
-[Dataset MoneyTalks](https://drive.google.com/file/d/1pfp23p8zYdz1zAOaEw4fEYiHFXm4ixvJ/view?usp=sharing)
+
+- [Dataset MoneyTalks](https://drive.google.com/file/d/1pfp23p8zYdz1zAOaEw4fEYiHFXm4ixvJ/view?usp=sharing)
 
 ### Membangun Model
 
-Kami membangun model menggunakan TensorFlow Sequential Model setelah melakukan tahapan pra-pemrosesan data pada dataset. Model yang telah dilatih kemudian disimpan langsung dalam format SavedModel, TensorFlow.js, dan TensorFlow Lite, sehingga dapat digunakan di berbagai platform seperti web dan perangkat mobile. Setelah itu, model ini dideploy menggunakan FAST API dan Docker.
+Kami membangun model menggunakan TensorFlow Sequential Model setelah melakukan tahapan pra-pemrosesan data pada dataset. Model yang telah dilatih kemudian disimpan langsung dalam format SavedModel, TensorFlow.js, dan TensorFlow Lite, sehingga dapat digunakan di berbagai platform seperti web dan perangkat mobile. Setelah itu, model ini dideploy menggunakan Vercel.
 Untuk melihat detail kode yang kami gunakan, silakan klik tautan berikut:
 
 - [Notebook MoneyTalks](https://colab.research.google.com/drive/114lNiIakORxkFqQPaWJayhMHSfSsAAwM#scrollTo=mMLZesHm5F2I)
@@ -147,10 +155,16 @@ npm install
 # 4. Jalankan aplikasi
 npm run dev
 ```
+## Fitur Utama
+<div>
+
+|                **Deteksi Real-time**               |                 **Voice Command**                |            **Audio Feedback**          |                 **Mobile Ready**               |
+| :-------------------------------------------------: | :-----------------------------------------------: | :-------------------------------------: | :---------------------------------------------: |
+| Deteksi nominal uang melalui kamera secara langsung | Navigasi dan interaksi menggunakan perintah suara | Umpan balik suara melalui teknologi TTS | Antarmuka ramah disabilitas di perangkat mobile |
 
 ## Screenshots
 
-![1](link github)
+![HalamanMoneyTalks](https://raw.githubusercontent.com/Pragiptalrs/Capstone-MoneyTalks/main/HalamanMoneyTalks.png)
 
 ## Alur Kerja MoneyTalks
 
