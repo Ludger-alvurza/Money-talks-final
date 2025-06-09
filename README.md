@@ -234,6 +234,7 @@ Kamera akan tertutup dan proses deteksi berhenti
 ## Video Demo
 
 Video demo penggunaan aplikasi MoneyTalks dapat dilihat melalui link berikut. 
+
 [Video Panduan Penggunaan MoneyTalks](https://drive.google.com/file/d/1UCkBEVx0X39qeRj9NanckzkD0eyxNApU/view?usp=sharing)
 
 ## Didukung Oleh
